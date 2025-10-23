@@ -1,6 +1,8 @@
 package com.example.quizley.config;
 
 import com.example.quizley.common.ApiError;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.validation.ConstraintViolationException;
 import org.apache.commons.fileupload.FileUploadBase;
 import org.springframework.core.NestedExceptionUtils;
@@ -71,7 +73,6 @@ public class GlobalExceptionHandler {
             case "INVALID_CREDENTIALS" -> "아이디 또는 비밀번호가 올바르지 않습니다.";
             case "NOT_FOUND" -> "존재하지 않는 페이지입니다.";
             case "FORBIDDEN" -> "권한이 없습니다";
-            case "NOT_ENOUGH_POINT" -> "포인트가 부족합니다.";
             case "INVALID_PASSWORD" -> "비밀번호가 일치하지 않습니다.";
             case "CONSTRAINT_VIOLATION" -> "데이터 무결성 위반";
             default -> "요청을 처리할 수 없습니다.";
@@ -91,6 +92,22 @@ public class GlobalExceptionHandler {
             return ApiError.of(409, "DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다.");
 
         return ApiError.of(409, "CONSTRAINT_VIOLATION", "데이터 무결성 위반");
+    }
+
+    // JWT 예외 처리
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<?> handleJwt(JwtException ex) {
+        String msg = ex.getMessage();
+
+        // 예외 유형별 맞춤 메시지
+        if (ex instanceof ExpiredJwtException) {
+            return ApiError.of(401, "EXPIRED_TOKEN", "토큰이 만료되었습니다.");
+        } else if (msg != null && msg.contains("signature")) {
+            return ApiError.of(401, "INVALID_SIGNATURE", "토큰 서명이 유효하지 않습니다.");
+        } else if (msg != null && msg.contains("JWT")) {
+            return ApiError.of(401, "INVALID_TOKEN", "유효하지 않은 토큰입니다.");
+        }
+        return ApiError.of(401, "INVALID_TOKEN", "인증에 실패했습니다.");
     }
 
     // 멀티파트: form 파트 누락 (ex. form 또는 images 파트가 아예 없을 때)
