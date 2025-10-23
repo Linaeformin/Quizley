@@ -88,6 +88,7 @@ public class SecurityConfig {
                         // 인증 없이 접근 가능한 공개 API
                         .requestMatchers("/api/users/signup").permitAll()
                         .requestMatchers("/api/users/login").permitAll()
+                        .requestMatchers("/api/users/refresh").permitAll()
 
                         // 어드민 보호
                         .requestMatchers("/api/admin/**").denyAll()

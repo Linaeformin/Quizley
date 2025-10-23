@@ -20,15 +20,18 @@ public class JwtProvider {
 
     private final String secretRaw;
     private final long accessExpMillis;
+    private final long refreshExpMillis;
     private Key key;
 
     // jwt.secret, jwt.access-exp-millis 필드에 저장
     public JwtProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-exp-millis}") long accessExpMillis
+            @Value("${jwt.access-exp-millis}") long accessExpMillis,
+            @Value("${jwt.refresh-exp-millis}") long refreshExpMillis
     ) {
         this.secretRaw = secret;
         this.accessExpMillis = accessExpMillis;
+        this.refreshExpMillis = refreshExpMillis;
     }
 
     // Base64 형태인지 판별 (문자셋+패딩)
@@ -67,6 +70,17 @@ public class JwtProvider {
         return len % 4 == 0 && BASE64_PATTERN.matcher(s).matches();
     }
 
+    // refresh token 발급 메서드
+    public String createRefreshToken(String userId) {
+        Date now = new Date();
+        return Jwts.builder()
+                .setSubject(userId)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + refreshExpMillis))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     // JWT 액세스 토큰 발급
     public String createAccessToken(String userId) {  // Long → String
         Date now = new Date();
@@ -77,7 +91,6 @@ public class JwtProvider {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
-
 
     // 토큰 검증 및 userId 반환
     public String getSubject(String token) {

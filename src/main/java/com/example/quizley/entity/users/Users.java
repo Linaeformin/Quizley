@@ -43,6 +43,9 @@ public class Users {
     @Column(nullable = false)
     private Integer level; // 레벨
 
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 회원가입 일자
