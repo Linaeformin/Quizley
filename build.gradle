@@ -21,80 +21,57 @@ repositories {
 def querydslVersion = "5.0.0"
 
 dependencies {
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
-
-	// 스프링 부트 기본 의존성
+	// --- 기존 유지 ---
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	runtimeOnly   'com.mysql:mysql-connector-j'
 
-	// DB 드라이버 (MySQL)
-	runtimeOnly 'com.mysql:mysql-connector-j'
-
-	// 테스트용 H2 데이터베이스
-	testRuntimeOnly 'com.h2database:h2'
-
-	// Lombok (컴파일용 + annotation 처리용)
+	// Lombok
 	compileOnly 'org.projectlombok:lombok:1.18.30'
 	annotationProcessor 'org.projectlombok:lombok:1.18.30'
 	testCompileOnly 'org.projectlombok:lombok:1.18.30'
 	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-	// 테스트 관련
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation 'org.mockito:mockito-core:5.10.0'
-	testImplementation 'org.mockito:mockito-inline:5.2.0'
-
-	// 이미지 파일 업로드
-	implementation 'commons-io:commons-io:2.14.0'
-
-	//queryDSL 의존성
+	// QueryDSL
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
 	annotationProcessor 'com.querydsl:querydsl-apt:5.0.0:jakarta'
 	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
 
-	// modelmapper 의존성
+	// 유틸
 	implementation 'org.modelmapper:modelmapper:2.3.9'
-
-	// 템플릿 엔진 thymeleaf
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-
-	// OpenAI API 연동
-	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
-	implementation 'com.theokanning.openai-gpt3-java:client:0.18.2'
-
-	// JSON 처리
-	implementation 'com.fasterxml.jackson.core:jackson-databind'
-	// 스프링 시큐리티
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	// 빈 유효성 검증
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-	// layout 사용
-	implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:3.1.0'
+	implementation 'commons-io:commons-io:2.14.0'
+	implementation 'commons-fileupload:commons-fileupload:1.5'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
-	// thymeleaf에서 스프링 시큐리티 사용
+	implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect:3.1.0'
 	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
 
-	// test에서 스프링 시큐리티 사용
-	testImplementation 'org.springframework.security:spring-security-test'
+	// Claude (Anthropic Java SDK)
+	implementation 'com.anthropic:anthropic-java:2.10.0'
 
-	// jwt 토큰
+	// AWS SDK v2 - S3 (프롬프트/파일 읽기용)
+	implementation platform('software.amazon.awssdk:bom:2.25.66')
+	implementation 'software.amazon.awssdk:s3'
+
+	// JWT 토큰
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-	// application.yml jwt 인식
-	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+	// --------------------------------
 
-	// 파일 용량 예외 처리
-	implementation 'commons-fileupload:commons-fileupload:1.5'
+	// 테스트
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.mockito:mockito-core:5.10.0'
+	testImplementation 'org.mockito:mockito-inline:5.2.0'
 }
 
-def querydslDir = "$buildDir/generated/sources/annotaionProcessor/java"
+def querydslDir = "$buildDir/generated/sources/annotationProcessor/java"
 
 sourceSets {
 	main {
@@ -110,14 +87,6 @@ tasks.withType(JavaCompile).configureEach {
 
 clean {
 	delete file(querydslDir)
-}
-
-tasks.named('test') {
-	useJUnitPlatform()
-}
-
-test {
-	useJUnitPlatform()
 }
 
 tasks.named('test') {

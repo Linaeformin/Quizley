@@ -89,6 +89,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/signup").permitAll()
                         .requestMatchers("/api/users/login").permitAll()
                         .requestMatchers("/api/users/refresh").permitAll()
+                        .requestMatchers("/admin/quiz/generate").permitAll()
+                        .requestMatchers("/debug/claude/**").permitAll()
 
                         // 어드민 보호
                         .requestMatchers("/api/admin/**").denyAll()
