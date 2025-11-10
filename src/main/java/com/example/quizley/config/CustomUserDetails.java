@@ -8,12 +8,12 @@ import java.util.Collection;
 // 유저 상세 정보
 public class CustomUserDetails implements UserDetails {
 
-    private final Integer id;       // PK
+    private final Long id;       // PK
     private final String username;  // 로그인 아이디
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(Integer id, String username, String password,
+    public CustomUserDetails(Long id, String username, String password,
                              Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
@@ -21,7 +21,7 @@ public class CustomUserDetails implements UserDetails {
         this.authorities = authorities;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
