@@ -2,6 +2,7 @@ package com.example.quizley.controller;
 
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.domain.Category;
+import com.example.quizley.dto.quiz.ChatRoomFormDto;
 import com.example.quizley.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Map;
 
 
 // 오늘의 퀴즈
@@ -50,5 +52,21 @@ public class TodayController {
 
         // TODO : 주말일 때 데이터 반환
         return ResponseEntity.ok(quizService.getWeekdayQuiz(today, String.valueOf(category), me.getId()));
+    }
+
+    // 평일 오늘의 퀴즈 AI 채팅방 생성
+    @PostMapping(value = "/chatroom")
+    public ResponseEntity<?> createChatRoom(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @RequestBody ChatRoomFormDto dto
+    ) throws Exception {
+        // 권한이 없을 때
+        if (me == null) return ResponseEntity.status(401).build();
+
+        // 채팅방 생성 서비스 출력 및 채팅방 PK 저장
+        Long chatId = quizService.createChatRoom(dto, me.getId());
+
+        // 채팅방 PK JSON 반환
+        return ResponseEntity.ok(Map.of("chatId", chatId));
     }
 }

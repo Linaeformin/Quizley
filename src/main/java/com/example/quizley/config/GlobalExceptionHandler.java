@@ -79,6 +79,7 @@ public class GlobalExceptionHandler {
             case "INVALID_CATEGORY"    -> "카테고리 값을 확인해주세요.";
             case "QUIZ_NOT_FOUND"      -> "오늘의 퀴즈를 찾을 수 없습니다.";
             case "ALREADY_COMPLETED"   -> "이미 응답한 퀴즈입니다.";
+            case "QUIZ_NOT_TODAY" -> "답변 기한이 지났습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);

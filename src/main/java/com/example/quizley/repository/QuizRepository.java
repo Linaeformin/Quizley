@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+
 // 퀴즈 레포지토리
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
     // 이미 존재하는 날짜에 등록된 질문인지
@@ -55,5 +56,9 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             LocalDate publishedDate,
             Category category
     );
+
+    boolean existsByQuizIdAndPublishedDate(Long quizId, LocalDate publishedDate);
+
+    Optional<Quiz> findByQuizId(Long quizId);
 }
 
