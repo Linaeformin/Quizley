@@ -141,7 +141,8 @@ public class QuizService {
         if (form == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_FORM");
 
         // 존재하지 않은 퀴즈 번호일 때
-        if (form.getQuizId() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MISSING_QUIZ_ID");
+        Quiz quiz = quizRepository.findByQuizId(form.getQuizId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "QUIZ_NOT_FOUND"));
 
         // 오늘의 날짜
         LocalDate todaySeoul = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -170,8 +171,6 @@ public class QuizService {
         }
 
         // 2) 없으면 새로 만들고 첫 AI 메시지 넣기
-        Quiz quiz = quizRepository.findByQuizId(form.getQuizId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "QUIZ_NOT_FOUND"));
 
         // Ai 채팅방 생성
         AiChat aiChat = new AiChat();
