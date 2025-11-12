@@ -15,5 +15,6 @@ import java.time.LocalDate;
 public class CommunityHomeResponse {
     private LocalDate date;
     private TodayQuizDto todayQuiz;
-    private Map<String, List<HotQuizDto>> hotQuizzesByCategory;
+    private Map<String, List<HotQuizDto>> quizzesByCategory;
+    private List<QuizListDto> quizzes;
 }

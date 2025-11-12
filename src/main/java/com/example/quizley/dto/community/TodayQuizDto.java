@@ -14,4 +14,5 @@ public class TodayQuizDto {
     private String content;
     private String category;
     private LocalDate publishDate;
+    private Boolean isLiked;
 }
