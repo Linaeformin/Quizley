@@ -60,7 +60,7 @@ public class UsersService implements UserDetailsService {
 
         // CustomUserDetails 로 래핑해서 반환
         return new CustomUserDetails(
-                user.getUserId().intValue(),    // PK
+                user.getUserId(),    // PK
                 user.getId(),                   // 로그인용 id
                 user.getPassword(),             // 비밀번호
                 Collections.emptyList()         // 권한 (필요 시 추가 가능)

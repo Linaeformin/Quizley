@@ -19,16 +19,16 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             Category category
     );
 
-    //커뮤니티 기능: 오늘의 질문 조회
+    // 커뮤니티 기능: 오늘의 질문 조회
     Optional<Quiz> findByPublishedDateAndOrigin(
             LocalDate publishedDate,
             Origin origin
     );
 
-    //특정 날짜의 모든 질문 조회(최신순)
+    // 특정 날짜의 모든 질문 조회(최신순)
     List<Quiz> findByPublishedDateOrderByCreatedAtDesc(LocalDate publishedDate);
 
-    //특정 날짜, 특정 카테고리의 질문 조회(최신순, 상위 N개)
+    // 특정 날짜, 특정 카테고리의 질문 조회(최신순, 상위 N개)
     List<Quiz> findByPublishedDateAndCategoryOrderByCreatedAtDesc(
             LocalDate publishedDate,
             Category category,
@@ -47,6 +47,13 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     List<Quiz> findByPublishedDateAndOriginOrderByCreatedAtDesc(
             LocalDate publishedDate,
             Origin origin
+    );
+
+    // origin이 SYSTEM이고, 오늘 날짜(published_date)와 카테고리가 일치하는 퀴즈 한 건 조회
+    Optional<Quiz> findByOriginAndPublishedDateAndCategory(
+            Origin origin,
+            LocalDate publishedDate,
+            Category category
     );
 }
 

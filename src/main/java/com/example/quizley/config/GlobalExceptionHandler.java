@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 
 // 전체 예외 처리 클래스
@@ -75,6 +76,9 @@ public class GlobalExceptionHandler {
             case "FORBIDDEN" -> "권한이 없습니다";
             case "INVALID_PASSWORD" -> "비밀번호가 일치하지 않습니다.";
             case "CONSTRAINT_VIOLATION" -> "데이터 무결성 위반";
+            case "INVALID_CATEGORY"    -> "카테고리 값을 확인해주세요.";
+            case "QUIZ_NOT_FOUND"      -> "오늘의 퀴즈를 찾을 수 없습니다.";
+            case "ALREADY_COMPLETED"   -> "이미 응답한 퀴즈입니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);
@@ -128,6 +132,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleUnsupportedMediaType(org.springframework.web.HttpMediaTypeNotSupportedException ex) {
         return ApiError.of(415, "UNSUPPORTED_MEDIA_TYPE",
                 "요청의 Content-Type이 올바르지 않습니다.");
+    }
+
+    // 카테고리 ENUM 바인딩 실패
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            return ApiError.of(400, "INVALID_CATEGORY", "카테고리 값을 확인해주세요.");
+        }
+        return ApiError.of(400, "BAD_REQUEST", "요청 파라미터가 올바르지 않습니다.");
     }
 
     // 그 외 멀티파트 처리 중 예외(랩핑된 경우 포함)
