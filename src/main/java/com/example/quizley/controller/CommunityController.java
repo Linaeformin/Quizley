@@ -26,7 +26,7 @@ public class CommunityController {
     @GetMapping("/home")
     public ResponseEntity<Map<String, Object>> getCommunityHome(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam(required = false) Category category,
+            @RequestParam Category category,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Long currentUserId = (userDetails != null) ? (long) userDetails.getId() : null;
@@ -45,7 +45,7 @@ public class CommunityController {
     public ResponseEntity<Map<String, Object>> getQuizList(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "latest") String sortBy,
-            @RequestParam(required = false) Category category,
+            @RequestParam Category category,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Long currentUserId = (userDetails != null) ? (long) userDetails.getId() : null;
