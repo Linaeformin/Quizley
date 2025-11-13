@@ -1,7 +1,9 @@
 package com.example.quizley.service;
 
 import com.example.quizley.domain.*;
+import com.example.quizley.dto.quiz.ChatMessageResDto;
 import com.example.quizley.dto.quiz.ChatRoomFormDto;
+import com.example.quizley.dto.quiz.ChatRoomResDto;
 import com.example.quizley.dto.quiz.WeekdayQuizResDto;
 import com.example.quizley.entity.quiz.AiChat;
 import com.example.quizley.entity.quiz.AiMessage;
@@ -9,13 +11,20 @@ import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -171,7 +180,6 @@ public class QuizService {
         }
 
         // 2) 없으면 새로 만들고 첫 AI 메시지 넣기
-
         // Ai 채팅방 생성
         AiChat aiChat = new AiChat();
         aiChat.setUsers(user);
@@ -186,6 +194,116 @@ public class QuizService {
 
         // 채팅방 ID 반환
         return aiChatRepository.save(aiChat).getChatId();
+    }
+
+    // 채팅방 접속 시 메시지 데이터 반환
+    public ChatRoomResDto getMessage(Long chatId, Long userId, int page, int size) {
+        // 1. 채팅방 존재 여부 체크
+        AiChat chat = aiChatRepository.findById(chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "NOT_FOUND"));
+
+        // 2. 채팅방 주인인지 체크
+        if (!chat.getUsers().getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "FORBIDDEN");
+        }
+
+        // 채팅 퀴즈 객체
+        Quiz quiz = chat.getQuiz();
+
+        // 1) page 하한 검증: -1보다 작으면 에러
+        if (page < -1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_PAGE");
+        }
+
+        // 2) 전체 페이지 개수 계산
+        long totalElements = aiMessageRepository.countByChatChatId(chatId);
+        int totalPages = (totalElements == 0) ? 0 : (int) Math.ceil((double) totalElements / size);
+
+        // 마지막 페이지 인덱스
+        int maxPage = (totalPages == 0) ? 0 : totalPages - 1;
+
+        // 3) 이론상 메시지가 없는 채팅방은 생성되지 않지만, 방어적으로 처리
+        if (totalPages == 0) {
+            // 메시지 없으면 page는 -1 또는 0만 허용
+            if (page > 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "NOT_FOUND");
+            }
+
+            // 채팅방 생성 날짜 및 요일
+            DateTimeFormatter roomDateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd. (E)")
+                    .withLocale(Locale.KOREAN);
+
+            // 데이터 반환
+            return ChatRoomResDto.builder()
+                    .chatId(chat.getChatId())
+                    .category(quiz.getCategory().name())
+                    .date(quiz.getPublishedDate().format(roomDateFormatter))
+                    .messages(List.of())
+                    .totalPages(0)
+                    .maxPages(0)
+                    .currentPage(0)
+                    .hasPrev(false)
+                    .hasNext(false)
+                    .build();
+        }
+
+        // 4) 메시지가 있을 때 page 상한 검증
+        if (page > maxPage) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "NOT_FOUND");
+        }
+
+        // page가 -1이면 "최신 페이지" = 0
+        if (page < 0) {
+            page = 0;
+        }
+
+        // 5) 실제 페이지 최신순 조회
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<AiMessage> messagePage = aiMessageRepository.findByChatChatId(chatId, pageable);
+
+        // 현재 페이지 번호
+        int currentPage = messagePage.getNumber();
+
+        // 채팅방 생성 일자 및 요일 반환
+        DateTimeFormatter roomDateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd. (E)")
+                .withLocale(Locale.KOREAN);
+
+        // 메시지 생성 시각 반환
+        DateTimeFormatter messageDateFormatter = DateTimeFormatter.ofPattern("a hh:mm")
+                .withLocale(Locale.KOREAN);
+
+        // DESC로 가져온 뒤 ASC로 뒤집기
+        List<AiMessage> messages = new java.util.ArrayList<>(messagePage.getContent());
+        java.util.Collections.reverse(messages);
+
+        // 메시지 데이터 삽입
+        List<ChatMessageResDto> messageDtos = messages.stream()
+                .map(m -> ChatMessageResDto.builder()
+                        .origin(m.getOrigin())
+                        .message(m.getContent())
+                        .date(m.getCreatedAt().format(messageDateFormatter))
+                        .build()
+                )
+                .toList();
+
+        // 이전 페이지 존재 여부
+        boolean hasPrev = currentPage > 0;
+
+        // 다음 페이지 존재 여부
+        boolean hasNext = currentPage < maxPage;
+
+        // 채팅방 및 채팅 메시지 데이터 반환
+        return ChatRoomResDto.builder()
+                .chatId(chat.getChatId())
+                .category(quiz.getCategory().name())
+                .date(quiz.getPublishedDate().format(roomDateFormatter))
+                .messages(messageDtos)
+                .totalPages(totalPages)
+                .maxPages(maxPage)
+                .currentPage(currentPage)
+                .hasPrev(hasPrev)
+                .hasNext(hasNext)
+                .build();
     }
 }
 

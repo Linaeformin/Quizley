@@ -13,7 +13,12 @@ public class ChatRoomResDto {
     private Long chatId;
     private String category;
     private String date;
-    private List<ChatMessageResDto> dto;
+    private List<ChatMessageResDto> messages;
 
-    // date, category 정제
+    // 페이징 메타
+    private int totalPages;   // 총 페이지 수
+    private int maxPages;     // 마지막 페이지 번호
+    private int currentPage;  // 현재 페이지(0부터 시작)
+    private boolean hasPrev;  // 이전 페이지 존재 여부
+    private boolean hasNext;  // 다음 페이지 존재 여부
 }

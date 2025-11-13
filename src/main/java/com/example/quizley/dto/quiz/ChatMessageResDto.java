@@ -11,7 +11,6 @@ import lombok.Setter;
 @Builder
 public class ChatMessageResDto {
     private MessageOrigin origin;
-    private Long userId;
     private String message;
     private String date;
 }
