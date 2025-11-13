@@ -7,6 +7,8 @@ import com.example.quizley.entity.users.Users;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 
 // 응답 및 댓글 엔티티
 @Entity
@@ -52,4 +54,19 @@ public class Comment {
     private java.time.LocalDateTime modifiedAt;
 
     private java.time.LocalDateTime deletedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String feedback;
+
+    @PrePersist
+    void prePersist() {
+        var now = LocalDateTime.now();
+        if (createdAt == null) createdAt = now;
+        if (modifiedAt == null) modifiedAt = now;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        modifiedAt = LocalDateTime.now();
+    }
 }

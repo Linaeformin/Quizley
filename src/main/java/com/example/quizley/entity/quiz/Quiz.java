@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.*;
 
-
 // 퀴즈 엔티티
 @Entity
 @Table(name="quiz")

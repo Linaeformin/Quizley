@@ -8,120 +8,137 @@ import com.example.quizley.dto.community.QuizListDto;
 import com.example.quizley.dto.community.TodayQuizDto;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.repository.QuizRepository;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.codehaus.groovy.util.ListHashMap;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import com.example.quizley.entity.comment.Comment;
+
+import java.sql.Time;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.Optional;
 
+@Builder
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CommunityService {
+
     private final QuizRepository quizRepository;
 
     //커뮤니티 홈 화면 조회
-    public CommunityHomeResponse getCommunityHome(LocalDate date) {
-        //오늘의 질문 조회
-        Quiz todayQuiz = quizRepository.findByPublishedDateAndOrigin(date, Origin.SYSTEM)
-                .orElseThrow(()-> new RuntimeException("오늘의 질문이 없습니다."));
+    public CommunityHomeResponse getCommunityHome(LocalDate date, Category category, Long currentUserId) {
+        validateDate(date);
 
-        //카테고리별로 HOT 인기글 3개씩 조회
-        Map<String, List<HotQuizDto>> hotQuizzesByCategory = new LinkedHashMap<>();
-
-        //모든 카테고리 순회
-        for (Category category : Category.values()) {
-            List<Quiz> hotQuizzes = quizRepository
-                    .findByPublishedDateAndOriginAndCategoryOrderByCreatedAtDesc(
-                            date,
-                            Origin.USER,
-                            category,
-                            PageRequest.of(0, 3) //상위 N개 수정 필요
-                    );
-
-            List<HotQuizDto> hotQuizDtos = hotQuizzes.stream()
-                    .map(this::convertToHotQuizDto)
-                    .collect(Collectors.toList());
-
-            //카테고리 이름을 문자열로 변환(한글로)
-            hotQuizzesByCategory.put(category.name(), hotQuizDtos);
+        if(category == null){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CATEGORY");
         }
+
+        //오늘의 질문 조회
+        Quiz todayQuiz = getTodayQuiz(date, category);
+        Boolean isTodayQuizLiked = checkQuizLiked(todayQuiz.getQuizId(), currentUserId);
+        TodayQuizDto todayQuizDto = convertToTodayQuizDto(todayQuiz, isTodayQuizLiked);
+
+        //특정 카테고리의 HOT 게시글 3개
+        List<HotQuizDto> hotQuiz = getHotQuizzesByCategory(date, category, currentUserId);
+
+        //특정 카테고리의 사용자 퀴즈만
+        List<QuizListDto> quizzes = getQuizList(date, "latest", category, currentUserId);
 
         //응답 생성
         return CommunityHomeResponse.builder()
                 .date(date)
-                .todayQuiz(convertToTodayQuizDto(todayQuiz))
-                .hotQuizzesByCategory(hotQuizzesByCategory)
+                .category(category.name())
+                .hotQuiz(hotQuiz)
+                .todayQuiz(todayQuizDto)
+                .quizzes(quizzes) //특정 카테고리의 전체 목록
                 .build();
-    }
+        }
 
     //게시글 목록 조회
-    public List<QuizListDto> getQuizList(LocalDate date, String sortBy){
-        //오늘의 질문(SYSTEM) 조회
-        Optional<Quiz> todayQuizOpt=quizRepository.findByPublishedDateAndOrigin(date, Origin.SYSTEM);
+    public List<QuizListDto> getQuizList(LocalDate date, String sortBy, Category category, Long currentUserId) {
+        validateDate(date);
+        validateSortType(sortBy);
 
-        //사용자 질문(USER) 조회
-        List<Quiz> userQuizzes;
+        //사용자 퀴즈만 가져오기
+        List<QuizListDto> userQuizzes = quizRepository.findQuizListByCategory(
+                date, Origin.USER, category, currentUserId
+        );
 
-        //최신순 정렬
-        if("latest".equals(sortBy)){
-            // 최신순: USER 질문만 조회
-            userQuizzes = quizRepository.findByPublishedDateAndOriginOrderByCreatedAtDesc(date, Origin.USER);
+        //정렬
+        if ("popular".equals(sortBy)) {
+            userQuizzes = sortByPopularity(userQuizzes);
         }
-
-        //인기순 정렬(댓글 수 기반 정렬 추가 필요)
-        else if("popular".equals(sortBy)){
-            // 임시로 최신순 사용
-            userQuizzes = quizRepository.findByPublishedDateAndOriginOrderByCreatedAtDesc(date, Origin.USER);
-        } else {
-            userQuizzes = quizRepository.findByPublishedDateAndOriginOrderByCreatedAtDesc(date, Origin.USER);
-        }
-
-        //SYSTEM을 맨 위에, USER를 아래에 배치
-        List<QuizListDto> result = new ArrayList<>();
-
-        todayQuizOpt.ifPresent(quiz -> result.add(convertToQuizListDto(quiz)));
-
-        List<QuizListDto> userQuizDtos = userQuizzes.stream()
-                .map(this::convertToQuizListDto)
-                .collect(Collectors.toList());
-        result.addAll(userQuizDtos);
-        return result;
+        return userQuizzes; //사용자 퀴즈만 반환
     }
 
-    //Dto 변환 메서드들
-    private TodayQuizDto convertToTodayQuizDto(Quiz quiz) {
+    //오늘의 질문 조회
+    private Quiz getTodayQuiz(LocalDate date, Category category) {
+        return quizRepository.findByOriginAndPublishedDateAndCategory(
+                Origin.SYSTEM, date, category)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "TODAY_QUIZ_NOT_FOUND"));
+
+    }
+
+    //퀴즈 좋아요 여부 확인
+    private Boolean checkQuizLiked(Long quizId, Long currentUserId) {
+        if(currentUserId == null){
+            return false;
+        }
+        Boolean isLiked = quizRepository.isQuizLikedByUser(quizId, currentUserId);
+        return isLiked != null ? isLiked:false;
+    }
+
+    //카테고리별 HOT 게시글 조회
+    private List<HotQuizDto> getHotQuizzesByCategory(LocalDate date, Category category, Long currentUserId) {
+        return quizRepository.findHotQuizzesByCategory(
+                date, Origin.USER, category, currentUserId, PageRequest.of(0, 3)
+        );
+    }
+
+    //인기순 정렬
+    private List<QuizListDto> sortByPopularity(List<QuizListDto> quizzes) {
+        return quizzes.stream()
+                .sorted((q1, q2) -> {
+                    Long popularity1 = q1.getLikeCount() + q1.getCommentCount();
+                    Long popularity2 = q2.getLikeCount() + q2.getCommentCount();
+                    return popularity2.compareTo(popularity1);
+                })
+                .collect(Collectors.toList());
+    }
+
+    //퀴즈 엔티티를 TodayQuizDto로 변환
+    private TodayQuizDto convertToTodayQuizDto(Quiz quiz, Boolean isLiked) {
         return TodayQuizDto.builder()
                 .quizId(quiz.getQuizId())
                 .content(quiz.getContent())
                 .category(quiz.getCategory().name())
-                .publishDate(quiz.getPublishedDate())
-                .build();
-    }
-
-    private HotQuizDto convertToHotQuizDto(Quiz quiz) {
-        return HotQuizDto.builder()
-                .quizId(quiz.getQuizId())
-                .content(quiz.getContent())
-                .category(quiz.getCategory().name())
-                .likeCount(0L) //Like 테이블 연동 후 실제 값으로 변경 필요
-                .commentCount(0L) //Comment 테이블 연동 후 실제 값으로 변경 필요
-                .createdAt(quiz.getCreatedAt())
-                .build();
-    }
-
-    private QuizListDto convertToQuizListDto(Quiz quiz) {
-        return QuizListDto.builder()
-                .quizId(quiz.getQuizId())
-                .content(quiz.getContent())
-                .category(quiz.getCategory().name())
-                .likeCount(0L) //Like 테이블 연동 후 실제 값으로 변경 필요
-                .commentCount(0L) //Comment 테이블 연동 후 실제 값으로 변경 필요
                 .publishedDate(quiz.getPublishedDate())
+                .isLiked(isLiked)
                 .build();
+    }
+
+    //날짜 유효성 검증
+    private void validateDate(LocalDate date) {
+        if (date == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_DATE");
+        }
+    }
+
+    //정렬 타입 유효성 검증
+    private void validateSortType(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_SORT_TYPE");
+        }
+
+        if (!"latest".equals(sortBy) && !"popular".equals(sortBy)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_SORT_TYPE");
+        }
     }
 }
