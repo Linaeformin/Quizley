@@ -3,7 +3,9 @@ package com.example.quizley.controller;
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.domain.Category;
 import com.example.quizley.dto.quiz.ChatRoomFormDto;
+import com.example.quizley.dto.quiz.ChatRoomResDto;
 import com.example.quizley.service.QuizService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,4 +71,24 @@ public class TodayController {
         // 채팅방 PK JSON 반환
         return ResponseEntity.ok(Map.of("chatId", chatId));
     }
+
+    // 평일 오늘의 퀴즈 AI 채팅방 메시지 조회
+    @GetMapping("/{chatId}")
+    public ResponseEntity<?> getChatMessage(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Long chatId,
+            @RequestParam(defaultValue = "-1") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) throws Exception {
+        // 권한이 없을 때
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // 채팅방 및 채팅 메시지 데이터 반환
+        ChatRoomResDto res = quizService.getMessage(chatId, me.getId(), page, size);
+
+        return ResponseEntity.ok(res);
+    }
+
 }
