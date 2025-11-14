@@ -5,12 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface CalendarRepository extends JpaRepository<BalanceAnswer, Long> {
 
-    // 특정 유저가 응답한 날짜 목록 가져오기
-    @Query("SELECT DATE(b.createdAt) FROM BalanceAnswer b WHERE b.userId = :userId")
-    List<LocalDate> findAnsweredDatesByUserId(@Param("userId") Long userId);
+    // 특정 유저가 응답한 날짜 목록을 문자열로 조회
+    @Query(value = "SELECT DATE_FORMAT(created_at, '%Y-%m-%d') FROM balance_answer WHERE user_id = :userId", nativeQuery = true)
+    List<String> findAnsweredDateStringsByUserId(@Param("userId") Long userId);
 }
