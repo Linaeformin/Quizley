@@ -142,4 +142,12 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             @Param("origin") Origin origin,
             @Param("userId") Long userId
     );
+
+    // 퀴즈 좋아요 개수 조회
+    @Query("SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = :quizId")
+    Long countLikesByQuizId(@Param("quizId") Long quizId);
+
+    // 댓글 개수 조회
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = :quizId")
+    Long countCommentsByQuizId(@Param("quizId") Long quizId);
 }
