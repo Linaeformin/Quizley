@@ -83,6 +83,9 @@ public class GlobalExceptionHandler {
             case "TODAY_QUIZ_NOT_FOUND" -> "오늘의 질문을 찾을 수 없습니다.";
             case "INVALID_DATE" -> "유효하지 않은 날짜입니다.";
             case "INVALID_SORT_TYPE" -> "유효하지 않은 정렬 타입입니다. (latest 또는 popular만 가능)";
+            case "COMMENT_NOT_FOUND" -> "댓글을 찾을 수 없습니다.";
+            case "CANNOT_LIKE_SYSTEM_QUIZ" -> "시스템 퀴즈에는 좋아요를 누를 수 없습니다.";
+            case "CANNOT_COMMENT_ON_SYSTEM_QUIZ" -> "시스템 퀴즈에는 댓글을 작성할 수 없습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);
