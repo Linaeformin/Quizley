@@ -19,6 +19,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: DEBUG — current commit
+        run: |
+          git rev-parse HEAD
+          git log -1 --oneline
+
       - name: Build jar with Gradle
         run: |
           chmod +x ./gradlew
