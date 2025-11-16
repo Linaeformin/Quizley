@@ -46,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // 화이트리스트 + OPTIONS 스킵
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = request.getServletPath();
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
         // 필요하면 패턴 매칭 허용: /api/users/** 같은
         for (String p : whitelist) {
