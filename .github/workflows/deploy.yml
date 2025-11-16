@@ -2,7 +2,7 @@ name: Build & Deploy to EC2
 
 on:
   push:
-    branches: [ "dev" ]   # main에 push될 때 배포
+    branches: [ "dev" ]   # dev에 push될 때 배포
   workflow_dispatch:        # 필요하면 수동 실행도 가능
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
           source: "build/libs/*.jar"
-          target: "/opt/myapp/new.jar"
+          target: "/opt/myapp/"
 
       - name: Restart app on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -43,6 +43,7 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             cd /opt/myapp
-            mv new.jar myapp.jar
+            LATEST_JAR=$(ls *.jar | head -n 1)
+            mv "$LATEST_JAR" myapp.jar
             chmod +x run.sh
             ./run.sh
