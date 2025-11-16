@@ -38,6 +38,8 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           source: "./build/libs/*.jar"
           target: "/opt/myapp/"
+          strip_components: 2
+          overwrite: true
 
       - name: Restart app on EC2
         uses: appleboy/ssh-action@v1.0.3
