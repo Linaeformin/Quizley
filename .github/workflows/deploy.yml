@@ -9,6 +9,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: Quizley   # ★★★ 핵심 ★★★
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +35,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
-          source: "build/libs/*.jar"
+          source: "Quizley/build/libs/*.jar" 
           target: "/opt/myapp/"
 
       - name: Restart app on EC2
@@ -45,22 +49,18 @@ jobs:
             echo ">>> Restarting app..."
             cd /opt/myapp
 
-            # 기존 프로세스 종료
             pid=$(pgrep -f "java -jar myapp.jar")
             if [ -n "$pid" ]; then
               echo ">>> Stopping existing app (PID: $pid)"
               kill -9 $pid
             fi
 
-            # 최신 JAR 선택
             LATEST_JAR=$(ls -t *.jar | head -n 1)
             echo ">>> Using JAR: $LATEST_JAR"
 
-            # JAR 교체
             rm -f myapp.jar
             cp "$LATEST_JAR" myapp.jar
 
-            # run.sh 실행
             chmod +x run.sh
             ./run.sh
 
