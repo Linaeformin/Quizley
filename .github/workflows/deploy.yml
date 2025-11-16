@@ -2,8 +2,8 @@ name: Build & Deploy to EC2
 
 on:
   push:
-    branches: [ "dev" ]   # dev에 push될 때 배포
-  workflow_dispatch:        # 필요하면 수동 실행도 가능
+    branches: [ "dev" ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -42,8 +42,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
+            echo ">>> Restarting app..."
             cd /opt/myapp
-            LATEST_JAR=$(ls *.jar | head -n 1)
-            mv "$LATEST_JAR" myapp.jar
+
+            # 기존 프로세스 종료
+            pid=$(pgrep -f "java -jar myapp.jar")
+            if [ -n "$pid" ]; then
+              echo ">>> Stopping existing app (PID: $pid)"
+              kill -9 $pid
+            fi
+
+            # 최신 JAR 선택
+            LATEST_JAR=$(ls -t *.jar | head -n 1)
+            echo ">>> Using JAR: $LATEST_JAR"
+
+            # JAR 교체
+            rm -f myapp.jar
+            cp "$LATEST_JAR" myapp.jar
+
+            # run.sh 실행
             chmod +x run.sh
             ./run.sh
+
+            echo ">>> Deployment completed."
