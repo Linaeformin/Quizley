@@ -69,6 +69,7 @@ public class SecurityConfig {
                 // 폼 로그인/로그아웃 제거
                 .formLogin(form -> form.disable())
                 .logout(logout -> logout.disable())
+                .httpBasic(ht -> ht.disable())
 
                 // 유저 정보 소스
                 .userDetailsService(usersService)
