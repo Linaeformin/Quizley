@@ -20,6 +20,7 @@ jobs:
           java-version: '17'
 
       - name: Build jar with Gradle
+        working-directory: ./Quizley
         run: |
           chmod +x ./gradlew
           ./gradlew clean bootJar
@@ -31,7 +32,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
-          source: "./build/libs/*.jar"
+          source: "Quizley/build/libs/*.jar"
           target: "/opt/myapp/"
 
       - name: Restart app on EC2
