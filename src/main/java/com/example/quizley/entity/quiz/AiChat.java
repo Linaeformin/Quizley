@@ -40,6 +40,8 @@ public class AiChat {
     @Column(name = "modified_at", nullable = false)
     private LocalDateTime modifiedAt;
 
+    private String summary;
+
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AiMessage> messages = new ArrayList<>();
 

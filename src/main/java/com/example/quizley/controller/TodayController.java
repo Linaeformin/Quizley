@@ -1,9 +1,13 @@
 package com.example.quizley.controller;
 
 import com.example.quizley.config.CustomUserDetails;
+import com.example.quizley.config.claude.ChatClaudeGateway;
 import com.example.quizley.domain.Category;
 import com.example.quizley.dto.quiz.ChatRoomFormDto;
 import com.example.quizley.dto.quiz.ChatRoomResDto;
+import com.example.quizley.dto.quiz.SentChatMessageFormDto;
+import com.example.quizley.dto.quiz.SentChatMessageResDto;
+import com.example.quizley.service.ChatService;
 import com.example.quizley.service.QuizService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +29,7 @@ import java.util.Map;
 public class TodayController {
 
     private final QuizService quizService;
+    private final ChatService chatService;
 
     // 오늘의 퀴즈 조회
     @GetMapping(value = "")
@@ -91,4 +96,24 @@ public class TodayController {
         return ResponseEntity.ok(res);
     }
 
+    // 메시지 전송
+    @PostMapping("/{chatId}/messages")
+    public ResponseEntity<SentChatMessageResDto> chatWithAi(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Long chatId,
+            @RequestBody SentChatMessageFormDto request
+    ) {
+        // 권한이 없을 때
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // 유저가 보낸 메시지
+        String userMessage = request.getMessage();
+
+        // 채팅 메시지 결과 생성
+        SentChatMessageResDto result = chatService.chat(chatId, me.getId(), userMessage);
+
+        return ResponseEntity.ok(result);
+    }
 }
