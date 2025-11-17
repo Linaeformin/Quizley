@@ -37,7 +37,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
           source: "./build/libs/*.jar"
-          target: "/opt/myapp/"
+          target: "/opt/myapp/build/libs/"
           strip_components: 2
           overwrite: true
 
@@ -51,18 +51,6 @@ jobs:
           script: |
             echo ">>> Restarting app..."
             cd /opt/myapp
-
-            pid=$(pgrep -f "java -jar myapp.jar")
-            if [ -n "$pid" ]; then
-              echo ">>> Stopping existing app (PID: $pid)"
-              kill -9 $pid
-            fi
-
-            LATEST_JAR=$(ls -t *.jar | head -n 1)
-            echo ">>> Using JAR: $LATEST_JAR"
-
-            rm -f myapp.jar
-            cp "$LATEST_JAR" myapp.jar
 
             chmod +x run.sh
             ./run.sh
