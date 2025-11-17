@@ -1,16 +1,15 @@
 package com.example.quizley.service;
 
+import com.example.quizley.config.claude.ChatClaudeGateway;
 import com.example.quizley.domain.*;
-import com.example.quizley.dto.quiz.ChatMessageResDto;
-import com.example.quizley.dto.quiz.ChatRoomFormDto;
-import com.example.quizley.dto.quiz.ChatRoomResDto;
-import com.example.quizley.dto.quiz.WeekdayQuizResDto;
+import com.example.quizley.dto.quiz.*;
 import com.example.quizley.entity.quiz.AiChat;
 import com.example.quizley.entity.quiz.AiMessage;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -40,6 +39,7 @@ public class QuizService {
     private final CommentRepository commentRepository;
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
     private final UsersRepository usersRepository;
+    private final ChatService chatService;
 
     // 퀴즈 생성 및 일주일 뒤 공개 설정
     @Transactional
@@ -172,7 +172,8 @@ public class QuizService {
             Long chatId = existingIdOpt.get();
 
             if (form.getContent() != null && !form.getContent().isBlank()) {
-                // TODO : 본격적인 채팅 구현
+                // 채팅 메시지 전송
+                chatService.chat(chatId, userId, form.getContent());
             }
 
             // 채팅방 ID 반환
@@ -189,11 +190,17 @@ public class QuizService {
         AiMessage aiMessage = new AiMessage();
         aiMessage.setOrigin(MessageOrigin.AI);
         aiMessage.setContent(quiz.getContent());
-        aiMessage.setChat(aiChat);
-        aiChat.getMessages().add(aiMessage);
+        aiChat.addMessage(aiMessage);
+
+        Long chatId = aiChatRepository.save(aiChat).getChatId();
+
+        if (form.getContent() != null && !form.getContent().isBlank()) {
+            // 채팅 메시지 전송
+            chatService.chat(chatId, userId, form.getContent());
+        }
 
         // 채팅방 ID 반환
-        return aiChatRepository.save(aiChat).getChatId();
+        return chatId;
     }
 
     // 채팅방 접속 시 메시지 데이터 반환

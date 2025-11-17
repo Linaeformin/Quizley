@@ -2,6 +2,7 @@ package com.example.quizley.controller;
 
 import com.example.quizley.config.claude.ClaudeGateway;
 import com.example.quizley.config.claude.PromptLoader;
+import com.example.quizley.config.claude.WeekdayPromptType;
 import com.example.quizley.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -20,10 +21,10 @@ public class AdminQuizController {
 
     // 질문 생성
     @PostMapping("/generate")
-    public Map<String,Object> generate(@RequestParam(defaultValue="weekday") String tag){
+    public Map<String,Object> generate(){
 
         // 프롬프트 로드
-        String prompt = prompts.load(tag);
+        String prompt = prompts.load(WeekdayPromptType.QUIZ);
 
         // 질문 생성
         Map<String,String> map = claude.generateMapFromPrompt(prompt);

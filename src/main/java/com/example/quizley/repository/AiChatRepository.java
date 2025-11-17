@@ -19,4 +19,7 @@ public interface AiChatRepository extends JpaRepository<AiChat, Long> {
     // 성능 최적화: chatId만 필요할 때 (옵션)
     @Query("select c.chatId from AiChat c where c.quiz.quizId = :quizId and c.users.userId = :userId")
     Optional<Long> findChatIdByQuizIdAndUserId(@Param("quizId") Long quizId, @Param("userId") Long userId);
+
+    // chatId와 유저 Id로 조회
+    Optional<AiChat> findByChatIdAndUsers_UserId(Long chatId, Long userId);
 }
