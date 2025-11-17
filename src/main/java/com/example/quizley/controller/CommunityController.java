@@ -2,12 +2,10 @@ package com.example.quizley.controller;
 
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.domain.Category;
-import com.example.quizley.dto.community.CommentCreateDto;
-import com.example.quizley.dto.community.CommunityHomeResponse;
-import com.example.quizley.dto.community.QuizDetailResponse;
-import com.example.quizley.dto.community.QuizListDto;
+import com.example.quizley.dto.community.*;
 import com.example.quizley.service.CommunityDetailService;
 import com.example.quizley.service.CommunityService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -134,5 +132,25 @@ public class CommunityController {
         body.put("status", 200);
         body.put("message", "좋아요 처리 완료");
         return ResponseEntity.ok(body);
+    }
+
+    // 게시글 작성
+    @PostMapping("/quiz")
+    public ResponseEntity<Map<String, Object>> createQuiz(
+            @RequestBody @Valid QuizCreateDto dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long quizId = communityDetailService.createUserQuiz(dto, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 201);
+        body.put("message", "게시글 작성 완료");
+        body.put("quizId", quizId);
+
+        return ResponseEntity.status(201).body(body);
     }
 }

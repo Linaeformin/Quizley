@@ -86,6 +86,7 @@ public class GlobalExceptionHandler {
             case "COMMENT_NOT_FOUND" -> "댓글을 찾을 수 없습니다.";
             case "CANNOT_LIKE_SYSTEM_QUIZ" -> "시스템 퀴즈에는 좋아요를 누를 수 없습니다.";
             case "CANNOT_COMMENT_ON_SYSTEM_QUIZ" -> "시스템 퀴즈에는 댓글을 작성할 수 없습니다.";
+            case "USER_NOT_FOUND" -> "사용자를 찾을 수 없습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);

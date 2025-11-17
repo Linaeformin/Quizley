@@ -1,5 +1,6 @@
 package com.example.quizley.service;
 import com.example.quizley.domain.Origin;
+import com.example.quizley.domain.QuizType;
 import com.example.quizley.dto.community.*;
 import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.comment.CommentLike;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -183,5 +186,31 @@ public class CommunityDetailService {
             comment.setLikeCount(comment.getLikeCount() + 1);
         }
         commentRepository.save(comment);
+    }
+
+    // 게시글 작성
+    @Transactional
+    public Long createUserQuiz(QuizCreateDto dto, Long userId) {
+        // 사용자 조회
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+
+        // 익명 여부 처리 (null이면 false로 기본값 설정)
+        Boolean isAnonymous = dto.getIsAnonymous() != null ? dto.getIsAnonymous() : false;
+
+        // Quiz 엔티티 생성
+        Quiz quiz = Quiz.builder()
+                .origin(Origin.USER)
+                .type(QuizType.WEEKDAY)
+                .content(dto.getContent())
+                .category(dto.getCategory())
+                .userId(userId)
+                .isAnonymous(isAnonymous)
+                .publishedDate(LocalDate.now())  // 오늘 날짜로 공개
+                .build();
+
+        // 퀴즈 저장
+        Quiz savedQuiz = quizRepository.save(quiz);
+        return savedQuiz.getQuizId();
     }
 }
