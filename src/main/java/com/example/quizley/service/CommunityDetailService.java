@@ -2,6 +2,8 @@ package com.example.quizley.service;
 import com.example.quizley.domain.Origin;
 import com.example.quizley.domain.QuizType;
 import com.example.quizley.dto.community.*;
+import com.example.quizley.entity.balance.BalanceAnswer;
+import com.example.quizley.entity.balance.QuizBalance;
 import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.comment.CommentLike;
 import com.example.quizley.entity.quiz.Quiz;
@@ -17,10 +19,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,8 @@ public class CommunityDetailService {
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final UsersRepository usersRepository;
+    private final BalanceAnswerRepository balanceAnswerRepository;
+    private final QuizBalanceRepository quizBalanceRepository;
 
     // 게시글 상세 조회
     public QuizDetailResponse getQuizDetail(Long quizId, Long currentUserId, String sort) {
@@ -83,6 +86,83 @@ public class CommunityDetailService {
                 .build();
     }
 
+    // 주말 퀴즈 상세 조회
+    public WeekendQuizDetailResponse getWeekendQuizDetail(Long quizId, Long currentUserId, String sort) {
+        // 1. 퀴즈 조회 및 검증
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
+        // SYSTEM 주말 퀴즈인지 검증
+        if (quiz.getOrigin() != Origin.SYSTEM || quiz.getType() != QuizType.WEEKEND) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "NOT_WEEKEND_QUIZ");
+        }
+
+        // 2. 투표 결과 조회
+        WeekendQuizVoteResultDto voteResult = getVoteResult(quizId);
+
+        // 3. 댓글 목록 조회
+        List<CommentDto> comments = getCommentsWithTimeFormat(quizId, currentUserId, sort);
+
+        // 4. 응답 생성
+        return WeekendQuizDetailResponse.builder()
+                .quizId(quiz.getQuizId())
+                .content(quiz.getContent())
+                .publishedDate(quiz.getPublishedDate())
+                .voteResult(voteResult)
+                .comments(comments)
+                .build();
+    }
+
+    // 투표 결과 조회
+    private WeekendQuizVoteResultDto getVoteResult(Long quizId) {
+        List<QuizBalance> balances = quizBalanceRepository.findByQuizIdOrderBySideAsc(quizId);
+
+        if (balances.size() != 2) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INVALID_BALANCE_DATA");
+        }
+
+        QuizBalance sideA = balances.stream()
+                .filter(b -> "A".equals(b.getSide()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "SIDE_A_NOT_FOUND"));
+
+        QuizBalance sideB = balances.stream()
+                .filter(b -> "B".equals(b.getSide()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "SIDE_B_NOT_FOUND"));
+
+        // 결과 집계
+        List<BalanceAnswer> allAnswers = balanceAnswerRepository.findByQuizId(quizId);
+
+        Map<String, Long> voteMap = new HashMap<>();
+        voteMap.put("A", 0L);
+        voteMap.put("B", 0L);
+
+        for (BalanceAnswer answer : allAnswers) {
+            String side = answer.getSide();
+            voteMap.put(side, voteMap.getOrDefault(side, 0L) + 1);
+        }
+
+        // 퍼센트 계산
+        long totalVotes = allAnswers.size();
+        Long sideACount = voteMap.get("A");
+        Long sideBCount = voteMap.get("B");
+
+        int sideAPercentage = totalVotes > 0 ? (int) Math.round((sideACount * 100.0) / totalVotes) : 0;
+        int sideBPercentage = totalVotes > 0 ? (int) Math.round((sideBCount * 100.0) / totalVotes) : 0;
+
+        // DTO 생성
+        return WeekendQuizVoteResultDto.builder()
+                .sideALabel(sideA.getLabel())
+                .sideAImageUrl(sideA.getImgUrl())
+                .sideAPercentage(sideAPercentage)
+                .sideBLabel(sideB.getLabel())
+                .sideBImageUrl(sideB.getImgUrl())
+                .sideBPercentage(sideBPercentage)
+                .build();
+    }
+
+
     // 댓글 목록 조회
     private List<CommentDto> getCommentsWithTimeFormat(Long quizId, Long currentUserId, String sort) {
         if ("popular".equalsIgnoreCase(sort)) {
@@ -134,7 +214,7 @@ public class CommunityDetailService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
 
         // SYSTEM 퀴즈는 댓글 작성 불가
-        if (quiz.getOrigin() == Origin.SYSTEM) {
+        if (quiz.getOrigin() == Origin.SYSTEM && quiz.getType() == QuizType.WEEKDAY) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CANNOT_COMMENT_ON_SYSTEM_QUIZ");
         }
 

@@ -87,6 +87,8 @@ public class GlobalExceptionHandler {
             case "CANNOT_LIKE_SYSTEM_QUIZ" -> "시스템 퀴즈에는 좋아요를 누를 수 없습니다.";
             case "CANNOT_COMMENT_ON_SYSTEM_QUIZ" -> "시스템 퀴즈에는 댓글을 작성할 수 없습니다.";
             case "USER_NOT_FOUND" -> "사용자를 찾을 수 없습니다.";
+            case "NOT_WEEKEND_QUIZ" -> "주말 퀴즈가 아닙니다.";
+            case "INVALID_BALANCE_DATA" -> "투표 선택지 데이터가 올바르지 않습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);
