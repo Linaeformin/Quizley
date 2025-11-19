@@ -80,6 +80,25 @@ public class CommunityController {
         return ResponseEntity.ok(body);
     }
 
+    // 주말 퀴즈 상세 조회
+    @GetMapping("/weekend/quiz/{quizId}")
+    public ResponseEntity<Map<String, Object>> getWeekendQuizDetail(
+            @PathVariable Long quizId,
+            @RequestParam(defaultValue = "latest") String sort,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long currentUserId = (userDetails != null) ? (long) userDetails.getId() : null;
+
+        WeekendQuizDetailResponse response = communityDetailService.getWeekendQuizDetail(
+                quizId, currentUserId, sort);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "주말 퀴즈 상세 조회 성공");
+        body.put("data", response);
+        return ResponseEntity.ok(body);
+    }
+
     // 퀴즈 좋아요 선택
     @PostMapping("/quiz/{quizId}/like")
     public ResponseEntity<Map<String, Object>> selectQuizLike(
