@@ -87,7 +87,12 @@ public class CommunityController {
             @RequestParam(defaultValue = "latest") String sort,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long currentUserId = (userDetails != null) ? (long) userDetails.getId() : null;
+        // 로그인 체크
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long currentUserId = (long) userDetails.getId();
 
         WeekendQuizDetailResponse response = communityDetailService.getWeekendQuizDetail(
                 quizId, currentUserId, sort);
@@ -171,5 +176,77 @@ public class CommunityController {
         body.put("quizId", quizId);
 
         return ResponseEntity.status(201).body(body);
+    }
+
+    // 댓글 삭제
+    @DeleteMapping("/comment/{commentId}")
+    public ResponseEntity<Map<String, Object>> deleteComment(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.deleteComment(commentId, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "댓글 삭제 완료");
+        return ResponseEntity.ok(body);
+    }
+
+    // 댓글 신고
+    @PostMapping("/comment/{commentId}/report")
+    public ResponseEntity<Map<String, Object>> reportComment(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.reportComment(commentId, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "댓글 신고 완료");
+        return ResponseEntity.ok(body);
+    }
+
+    // 사용자 차단
+    @PostMapping("/user/{userId}/block")
+    public ResponseEntity<Map<String, Object>> blockUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.blockUser(userId, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "사용자 차단 완료");
+        return ResponseEntity.ok(body);
+    }
+
+    // 사용자 차단 해제
+    @DeleteMapping("/user/{userId}/block")
+    public ResponseEntity<Map<String, Object>> unblockUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.unblockUser(userId, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "사용자 차단 해제 완료");
+        return ResponseEntity.ok(body);
     }
 }

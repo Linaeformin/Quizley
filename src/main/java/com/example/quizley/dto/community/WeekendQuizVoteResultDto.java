@@ -17,4 +17,6 @@ public class WeekendQuizVoteResultDto {
     private String sideBLabel;
     private String sideBImageUrl;
     private Integer sideBPercentage;
+
+    private String userSelectedSide; // 사용자가 선택한 항목
 }
