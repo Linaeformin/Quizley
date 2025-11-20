@@ -89,6 +89,10 @@ public class GlobalExceptionHandler {
             case "USER_NOT_FOUND" -> "사용자를 찾을 수 없습니다.";
             case "NOT_WEEKEND_QUIZ" -> "주말 퀴즈가 아닙니다.";
             case "INVALID_BALANCE_DATA" -> "투표 선택지 데이터가 올바르지 않습니다.";
+            case "ALREADY_REPORTED" -> "이미 신고한 콘텐츠입니다.";
+            case "CANNOT_BLOCK_YOURSELF" -> "자기 자신을 차단할 수 없습니다.";
+            case "ALREADY_BLOCKED" -> "이미 차단한 사용자입니다.";
+            case "BLOCK_NOT_FOUND" -> "차단 정보를 찾을 수 없습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);

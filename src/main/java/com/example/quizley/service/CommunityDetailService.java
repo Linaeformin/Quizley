@@ -1,6 +1,8 @@
 package com.example.quizley.service;
+import com.example.quizley.domain.ContentType;
 import com.example.quizley.domain.Origin;
 import com.example.quizley.domain.QuizType;
+import com.example.quizley.domain.ReportAction;
 import com.example.quizley.dto.community.*;
 import com.example.quizley.entity.balance.BalanceAnswer;
 import com.example.quizley.entity.balance.QuizBalance;
@@ -8,6 +10,8 @@ import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.comment.CommentLike;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.quiz.QuizLike;
+import com.example.quizley.entity.users.BlockUser;
+import com.example.quizley.entity.users.ReportUser;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
 import com.example.quizley.util.TimeFormatUtil;
@@ -22,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +39,8 @@ public class CommunityDetailService {
     private final UsersRepository usersRepository;
     private final BalanceAnswerRepository balanceAnswerRepository;
     private final QuizBalanceRepository quizBalanceRepository;
+    private final BlockUserRepository blockUserRepository;
+    private final ReportUserRepository reportUserRepository;
 
     // 게시글 상세 조회
     public QuizDetailResponse getQuizDetail(Long quizId, Long currentUserId, String sort) {
@@ -54,10 +61,9 @@ public class CommunityDetailService {
         }
 
         // 작성자 닉네임 조회 (익명 처리)
-        String nickname = "익명"; //나중에 익명 처리 구현
+        String nickname = "익명";
         if (quiz.getUserId() != null && !quiz.getIsAnonymous()) {
-            Users user = usersRepository.findById(quiz.getUserId())
-                    .orElseThrow(null);
+            Users user = usersRepository.findById(quiz.getUserId()).orElse(null);
             if (user != null) {
                 nickname = user.getNickname();
             }
@@ -88,7 +94,7 @@ public class CommunityDetailService {
 
     // 주말 퀴즈 상세 조회
     public WeekendQuizDetailResponse getWeekendQuizDetail(Long quizId, Long currentUserId, String sort) {
-        // 1. 퀴즈 조회 및 검증
+        // 퀴즈 조회 및 검증
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
 
@@ -97,13 +103,13 @@ public class CommunityDetailService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "NOT_WEEKEND_QUIZ");
         }
 
-        // 2. 투표 결과 조회
-        WeekendQuizVoteResultDto voteResult = getVoteResult(quizId);
+        // 투표 결과 조회 (currentUserId 전달)
+        WeekendQuizVoteResultDto voteResult = getVoteResult(quizId, currentUserId);
 
-        // 3. 댓글 목록 조회
+        // 댓글 목록 조회
         List<CommentDto> comments = getCommentsWithTimeFormat(quizId, currentUserId, sort);
 
-        // 4. 응답 생성
+        // 응답 생성
         return WeekendQuizDetailResponse.builder()
                 .quizId(quiz.getQuizId())
                 .content(quiz.getContent())
@@ -114,7 +120,7 @@ public class CommunityDetailService {
     }
 
     // 투표 결과 조회
-    private WeekendQuizVoteResultDto getVoteResult(Long quizId) {
+    private WeekendQuizVoteResultDto getVoteResult(Long quizId, Long currentUserId) {
         List<QuizBalance> balances = quizBalanceRepository.findByQuizIdOrderBySideAsc(quizId);
 
         if (balances.size() != 2) {
@@ -131,7 +137,7 @@ public class CommunityDetailService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "SIDE_B_NOT_FOUND"));
 
-        // 결과 집계
+        // 투표 결과 집계
         List<BalanceAnswer> allAnswers = balanceAnswerRepository.findByQuizId(quizId);
 
         Map<String, Long> voteMap = new HashMap<>();
@@ -151,6 +157,15 @@ public class CommunityDetailService {
         int sideAPercentage = totalVotes > 0 ? (int) Math.round((sideACount * 100.0) / totalVotes) : 0;
         int sideBPercentage = totalVotes > 0 ? (int) Math.round((sideBCount * 100.0) / totalVotes) : 0;
 
+        // 현재 사용자가 선택한 항목 조회
+        String userSelectedSide = null;
+        if (currentUserId != null) {
+            Optional<BalanceAnswer> userAnswer = balanceAnswerRepository.findByQuizIdAndUserId(quizId, currentUserId);
+            if (userAnswer.isPresent()) {
+                userSelectedSide = userAnswer.get().getSide();
+            }
+        }
+
         // DTO 생성
         return WeekendQuizVoteResultDto.builder()
                 .sideALabel(sideA.getLabel())
@@ -159,6 +174,7 @@ public class CommunityDetailService {
                 .sideBLabel(sideB.getLabel())
                 .sideBImageUrl(sideB.getImgUrl())
                 .sideBPercentage(sideBPercentage)
+                .userSelectedSide(userSelectedSide)
                 .build();
     }
 
@@ -292,5 +308,87 @@ public class CommunityDetailService {
         // 퀴즈 저장
         Quiz savedQuiz = quizRepository.save(quiz);
         return savedQuiz.getQuizId();
+    }
+
+    // 댓글 삭제
+    @Transactional
+    public void deleteComment(Long commentId, Long userId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND"));
+
+        // 본인이 작성한 댓글인지 확인
+        if (!comment.getUser().getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // soft delete
+        comment.setDeletedAt(LocalDateTime.now());
+        commentRepository.save(comment);
+    }
+
+    // 댓글 신고
+    @Transactional
+    public void reportComment(Long commentId, Long userId) {
+        // 댓글 존재 확인
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND"));
+
+        // 이미 신고한 댓글인지 확인
+        boolean alreadyReported = reportUserRepository.existsByReporterIdAndContentTypeAndContentId(
+                userId, ContentType.COMMENT, commentId
+        );
+
+        if (alreadyReported) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ALREADY_REPORTED");
+        }
+
+        // 신고 생성
+        ReportUser report = ReportUser.builder()
+                .reporterId(userId)
+                .contentType(ContentType.COMMENT)
+                .contentId(commentId)
+                .action(ReportAction.NONE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        reportUserRepository.save(report);
+    }
+
+    // 사용자 차단
+    @Transactional
+    public void blockUser(Long blockedUserId, Long currentUserId) {
+        // 자기 자신을 차단할 수 없음
+        if (blockedUserId.equals(currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CANNOT_BLOCK_YOURSELF");
+        }
+
+        // 차단할 사용자 존재 확인
+        usersRepository.findById(blockedUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+
+        // 이미 차단했는지 확인
+        boolean alreadyBlocked = blockUserRepository.existsByBlockerIdAndBlockedId(currentUserId, blockedUserId);
+
+        if (alreadyBlocked) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ALREADY_BLOCKED");
+        }
+
+        // 차단 생성
+        BlockUser blockUser = BlockUser.builder()
+                .blockerId(currentUserId)
+                .blockedId(blockedUserId)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        blockUserRepository.save(blockUser);
+    }
+
+    // 사용자 차단 해제
+    @Transactional
+    public void unblockUser(Long blockedUserId, Long currentUserId) {
+        BlockUser blockUser = blockUserRepository.findByBlockerIdAndBlockedId(currentUserId, blockedUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BLOCK_NOT_FOUND"));
+
+        blockUserRepository.delete(blockUser);
     }
 }

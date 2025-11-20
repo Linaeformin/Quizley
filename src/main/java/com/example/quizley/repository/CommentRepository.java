@@ -33,7 +33,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 최신순
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
             "c.commentId, c.content, " +
-            "CASE WHEN c.writerAnonymous = true THEN '익명' ELSE u.nickname END, " +
+            "CASE WHEN c.writerAnonymous = true THEN " +
+            "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
+            "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
+            "AND c2.createdAt <= c.createdAt AND c2.deletedAt IS NULL) AS string)) " +
+            "ELSE u.nickname END, " +
             "c.likeCount, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +
@@ -49,7 +53,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 인기순 쿼리
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
             "c.commentId, c.content, " +
-            "CASE WHEN c.writerAnonymous = true THEN '익명' ELSE u.nickname END, " +
+            "CASE WHEN c.writerAnonymous = true THEN " +
+            "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
+            "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
+            "AND c2.createdAt <= c.createdAt AND c2.deletedAt IS NULL) AS string)) " +
+            "ELSE u.nickname END, " +
             "c.likeCount, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +

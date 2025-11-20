@@ -25,5 +25,8 @@ public interface BalanceAnswerRepository extends JpaRepository<BalanceAnswer, Lo
 
     // 특정 퀴즈의 모든 투표 결과 조회
     List<BalanceAnswer> findByQuizId(Long quizId);
+
+    // 특정 퀴즈에서 특정 사용자의 선택 조회
+    Optional<BalanceAnswer> findByQuizIdAndUserId(Long quizId, Long userId);
 }
 
