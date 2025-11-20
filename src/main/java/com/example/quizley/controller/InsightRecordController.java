@@ -1,17 +1,19 @@
 package com.example.quizley.controller;
 
+import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.dto.calendar.CalendarResponseDto;
 import com.example.quizley.dto.insight.InsightRecordResponseDto;
-import com.example.quizley.service.InsightRecordService;
+import com.example.quizley.dto.insight.SameQuestionAnswerRequestDto;
+import com.example.quizley.dto.insight.SameQuestionAnswerResponseDto;
 import com.example.quizley.service.CalendarService;
-import com.example.quizley.config.jwt.JwtProvider;
-import com.example.quizley.repository.UsersRepository;
+import com.example.quizley.service.InsightRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/insight/record")
@@ -20,57 +22,75 @@ public class InsightRecordController {
 
     private final InsightRecordService insightRecordService;
     private final CalendarService calendarService;
-    private final JwtProvider jwtProvider;
-    private final UsersRepository usersRepository;
 
-    // 선택한 날짜의 인사이트 조회
+    // 특정 날짜의 인사이트 목록 조회 (사용자가 실제로 푼 것만)
     @GetMapping("/{date}")
-    public ResponseEntity<InsightRecordResponseDto> getInsightByDate(
+    public ResponseEntity<?> getInsightByDate(
             @PathVariable LocalDate date,
-            HttpServletRequest request
+            @AuthenticationPrincipal CustomUserDetails me
     ) {
-        // JWT에서 로그인 ID 추출
-        String token = request.getHeader("Authorization");
-        if (token == null || !token.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).build(); // 인증 실패
-        }
-
-        String jwt = token.replace("Bearer ", ""); // 실제 JWT 값만 분리
-        String loginId = jwtProvider.getSubject(jwt); // 토큰에서 로그인 ID 추출
-
-        // 로그인 ID로 유저 PK 조회
-        Long userId = usersRepository.findById(loginId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."))
-                .getUserId();
-
-        // 인사이트 조회
-        InsightRecordResponseDto response = insightRecordService.getInsightByDate(date);
-        return ResponseEntity.ok(response);
-    }
-
-    // 선택한 인사이트 삭제
-    @DeleteMapping("/{quizId}")
-    public ResponseEntity<CalendarResponseDto> deleteInsight(
-            @PathVariable Long quizId,
-            HttpServletRequest request
-    ) {
-        // JWT에서 로그인 ID 추출
-        String token = request.getHeader("Authorization");
-        if (token == null || !token.startsWith("Bearer ")) {
+        if (me == null) {
             return ResponseEntity.status(401).build();
         }
 
-        String jwt = token.replace("Bearer ", "");
-        String loginId = jwtProvider.getSubject(jwt);
+        Long userId = me.getId();
 
-        // 로그인 ID로 유저 PK 조회
-        Long userId = usersRepository.findById(loginId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."))
-                .getUserId();
+        List<InsightRecordResponseDto> insights =
+                insightRecordService.getInsightByDate(userId, date);
 
-        // 인사이트 삭제 + 캘린더 갱신
+        return ResponseEntity.ok(insights);
+    }
+
+    // 사용자가 푼 특정 인사이트 삭제
+    @DeleteMapping("/{quizId}")
+    public ResponseEntity<?> deleteInsight(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails me
+    ) {
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long userId = me.getId();
+
         insightRecordService.deleteInsight(quizId, userId);
-        CalendarResponseDto updatedCalendar = calendarService.getCalendar(userId);
-        return ResponseEntity.ok(updatedCalendar);
+
+        // 삭제 후 캘린더 다시 조회해서 반환
+        CalendarResponseDto calendar = calendarService.getCalendar(userId);
+
+        return ResponseEntity.ok(calendar);
+    }
+
+    // 같은 질문 과거 답변 목록 조회
+    @GetMapping("/{quizId}/answers")
+    public ResponseEntity<?> getSameQuestionAnswers(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails me
+    ) {
+        if (me == null) return ResponseEntity.status(401).build();
+
+        Long userId = me.getId();
+
+        List<SameQuestionAnswerResponseDto> answers =
+                insightRecordService.getSameQuestionAnswers(userId, quizId);
+
+        return ResponseEntity.ok(answers);
+    }
+
+    // 같은 질문 새 답변 등록
+    @PostMapping("/{quizId}/answers")
+    public ResponseEntity<?> addSameQuestionAnswer(
+            @PathVariable Long quizId,
+            @RequestBody SameQuestionAnswerRequestDto request,
+            @AuthenticationPrincipal CustomUserDetails me
+    ) {
+        if (me == null) return ResponseEntity.status(401).build();
+
+        Long userId = me.getId();
+
+        SameQuestionAnswerResponseDto saved =
+                insightRecordService.addSameQuestionAnswer(userId, quizId, request);
+
+        return ResponseEntity.ok(saved);
     }
 }

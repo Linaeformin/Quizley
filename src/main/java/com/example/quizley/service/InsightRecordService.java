@@ -1,46 +1,107 @@
 package com.example.quizley.service;
 
-import com.example.quizley.domain.Origin;
 import com.example.quizley.dto.insight.InsightRecordResponseDto;
+import com.example.quizley.dto.insight.SameQuestionAnswerRequestDto;
+import com.example.quizley.dto.insight.SameQuestionAnswerResponseDto;
+import com.example.quizley.entity.balance.BalanceAnswer;
+import com.example.quizley.entity.insight.InsightAnswer;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.repository.BalanceAnswerRepository;
 import com.example.quizley.repository.QuizRepository;
+import com.example.quizley.repository.InsightAnswerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class InsightRecordService {
 
-    private final QuizRepository quizRepository;
     private final BalanceAnswerRepository balanceAnswerRepository;
+    private final QuizRepository quizRepository;
+    private final InsightAnswerRepository insightAnswerRepository;
 
-    // 선택한 날짜의 인사이트 조회
-    public InsightRecordResponseDto getInsightByDate(LocalDate date) {
-        Quiz quiz = quizRepository.findByPublishedDateAndOrigin(date, Origin.SYSTEM)
-                .orElseThrow(() -> new IllegalArgumentException(date + " 날짜의 인사이트(퀴즈)를 찾을 수 없습니다."));
+    // 특정 날짜에 사용자가 실제로 푼 인사이트 조회
+    public List<InsightRecordResponseDto> getInsightByDate(Long userId, LocalDate date) {
 
-        return new InsightRecordResponseDto(
-                quiz.getQuizId(),
-                quiz.getCategory().name(),
-                quiz.getPublishedDate(),
-                quiz.getContent(),
-                null, // 요약 (팀원 기능 연동 시 추가)
-                null  // 피드백 (팀원 기능 연동 시 추가)
-        );
+        // 해당 날짜 00:00~23:59 범위 생성
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(23, 59, 59);
+
+        // 사용자가 해당 날짜에 푼 퀴즈 목록 조회
+        List<BalanceAnswer> answers =
+                balanceAnswerRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
+
+        if (answers.isEmpty()) {
+            throw new IllegalArgumentException(date + " 날짜에 사용자가 푼 인사이트가 없습니다.");
+        }
+
+        // 각 answer마다 quiz 정보 조회 + DTO 변환
+        return answers.stream()
+                .map(answer -> {
+                    Quiz quiz = quizRepository.findById(answer.getQuizId())
+                            .orElseThrow(() -> new IllegalArgumentException("퀴즈 정보를 찾을 수 없습니다."));
+
+                    return new InsightRecordResponseDto(
+                            quiz.getQuizId(),
+                            quiz.getCategory().name(),
+                            quiz.getPublishedDate(),
+                            quiz.getContent(),
+                            null, // summary
+                            null  // feedback
+                    );
+                })
+                .toList();
     }
 
-    // 선택한 날짜의 인사이트 삭제 (응답 포함)
+    // 사용자가 푼 특정 인사이트 삭제
     @Transactional
     public void deleteInsight(Long quizId, Long userId) {
-        Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 인사이트(퀴즈)를 찾을 수 없습니다."));
 
+        // 사용자가 푼 정답만 삭제 (퀴즈 자체는 삭제 X)
         balanceAnswerRepository.deleteByQuizIdAndUserId(quizId, userId);
+    }
 
-        quizRepository.delete(quiz);
+    // 같은 질문 과거 답변 목록 조회
+    public List<SameQuestionAnswerResponseDto> getSameQuestionAnswers(Long userId, Long quizId) {
+
+        List<InsightAnswer> answers =
+                insightAnswerRepository.findByUserIdAndQuizIdOrderByCreatedAtDesc(userId, quizId);
+
+        return answers.stream()
+                .map(a -> new SameQuestionAnswerResponseDto(
+                        a.getId(),
+                        a.getContent(),
+                        a.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    // 같은 질문에 새 답변 추가
+    @Transactional
+    public SameQuestionAnswerResponseDto addSameQuestionAnswer(
+            Long userId,
+            Long quizId,
+            SameQuestionAnswerRequestDto request
+    ) {
+        quizRepository.findById(quizId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 퀴즈를 찾을 수 없습니다."));
+
+        InsightAnswer entity = new InsightAnswer();
+        entity.setQuizId(quizId);
+        entity.setUserId(userId);
+        entity.setContent(request.getAnswer());
+
+        InsightAnswer saved = insightAnswerRepository.save(entity);
+
+        return new SameQuestionAnswerResponseDto(
+                saved.getId(),
+                saved.getContent(),
+                saved.getCreatedAt()
+        );
     }
 }
