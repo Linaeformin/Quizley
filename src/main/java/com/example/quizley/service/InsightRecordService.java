@@ -1,10 +1,14 @@
 package com.example.quizley.service;
 
 import com.example.quizley.dto.insight.InsightRecordResponseDto;
+import com.example.quizley.dto.insight.SameQuestionAnswerRequestDto;
+import com.example.quizley.dto.insight.SameQuestionAnswerResponseDto;
 import com.example.quizley.entity.balance.BalanceAnswer;
+import com.example.quizley.entity.insight.InsightAnswer;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.repository.BalanceAnswerRepository;
 import com.example.quizley.repository.QuizRepository;
+import com.example.quizley.repository.InsightAnswerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +23,7 @@ public class InsightRecordService {
 
     private final BalanceAnswerRepository balanceAnswerRepository;
     private final QuizRepository quizRepository;
+    private final InsightAnswerRepository insightAnswerRepository;
 
     // 특정 날짜에 사용자가 실제로 푼 인사이트 조회
     public List<InsightRecordResponseDto> getInsightByDate(Long userId, LocalDate date) {
@@ -59,5 +64,44 @@ public class InsightRecordService {
 
         // 사용자가 푼 정답만 삭제 (퀴즈 자체는 삭제 X)
         balanceAnswerRepository.deleteByQuizIdAndUserId(quizId, userId);
+    }
+
+    // 같은 질문 과거 답변 목록 조회
+    public List<SameQuestionAnswerResponseDto> getSameQuestionAnswers(Long userId, Long quizId) {
+
+        List<InsightAnswer> answers =
+                insightAnswerRepository.findByUserIdAndQuizIdOrderByCreatedAtDesc(userId, quizId);
+
+        return answers.stream()
+                .map(a -> new SameQuestionAnswerResponseDto(
+                        a.getId(),
+                        a.getContent(),
+                        a.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    // 같은 질문에 새 답변 추가
+    @Transactional
+    public SameQuestionAnswerResponseDto addSameQuestionAnswer(
+            Long userId,
+            Long quizId,
+            SameQuestionAnswerRequestDto request
+    ) {
+        quizRepository.findById(quizId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 퀴즈를 찾을 수 없습니다."));
+
+        InsightAnswer entity = new InsightAnswer();
+        entity.setQuizId(quizId);
+        entity.setUserId(userId);
+        entity.setContent(request.getAnswer());
+
+        InsightAnswer saved = insightAnswerRepository.save(entity);
+
+        return new SameQuestionAnswerResponseDto(
+                saved.getId(),
+                saved.getContent(),
+                saved.getCreatedAt()
+        );
     }
 }
