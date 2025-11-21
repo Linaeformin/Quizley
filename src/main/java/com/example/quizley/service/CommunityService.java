@@ -2,10 +2,7 @@ package com.example.quizley.service;
 
 import com.example.quizley.domain.Category;
 import com.example.quizley.domain.Origin;
-import com.example.quizley.dto.community.CommunityHomeResponse;
-import com.example.quizley.dto.community.HotQuizDto;
-import com.example.quizley.dto.community.QuizListDto;
-import com.example.quizley.dto.community.TodayQuizDto;
+import com.example.quizley.dto.community.*;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.repository.QuizRepository;
 import lombok.Builder;
@@ -140,5 +137,36 @@ public class CommunityService {
         if (!"latest".equals(sortBy) && !"popular".equals(sortBy)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_SORT_TYPE");
         }
+    }
+
+    // 키워드로 퀴즈 검색
+    public QuizSearchResponse searchQuizzes(String keyword, String sortBy, Long currentUserId) {
+        // 키워드 유효성 검증
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_KEYWORD");
+        }
+
+        // 정렬 타입 유효성 검증
+        validateSortType(sortBy);
+
+        // 키워드로 퀴즈 검색 (최신순)
+        List<QuizListDto> searchResults = quizRepository.searchQuizzesByKeywordOrderByLatest(
+                keyword.trim(), currentUserId
+        );
+
+        // 인기순 정렬이 요청된 경우
+        if ("popular".equals(sortBy)) {
+            searchResults = sortByPopularity(searchResults);
+        }
+
+        // 전체 검색 결과 개수 조회
+        Long totalCount = quizRepository.countByContentContaining(keyword.trim());
+
+        // 응답 생성
+        return QuizSearchResponse.builder()
+                .keyword(keyword.trim())
+                .totalCount(totalCount)
+                .quizzes(searchResults)
+                .build();
     }
 }

@@ -150,4 +150,27 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     // 댓글 개수 조회
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = :quizId")
     Long countCommentsByQuizId(@Param("quizId") Long quizId);
+
+    // 키워드로 퀴즈 검색 (최신순)
+    @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
+            "q.quizId, q.content, q.category, u.nickname, " +
+            "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
+            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
+            "q.createdAt, q.publishedDate, " +
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
+            "      ELSE false END)) " +
+            "FROM Quiz q " +
+            "LEFT JOIN Users u ON q.userId = u.userId " +
+            "WHERE q.content LIKE %:keyword% " +
+            "ORDER BY q.createdAt DESC")
+    List<QuizListDto> searchQuizzesByKeywordOrderByLatest(
+            @Param("keyword") String keyword,
+            @Param("userId") Long userId
+    );
+
+    // 키워드로 퀴즈 검색 결과 개수 조회
+    @Query("SELECT COUNT(q) FROM Quiz q WHERE q.content LIKE %:keyword%")
+    Long countByContentContaining(@Param("keyword") String keyword);
+
 }
