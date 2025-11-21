@@ -1,5 +1,6 @@
 package com.example.quizley.entity.quiz;
 
+import com.example.quizley.domain.ChatStatus;
 import com.example.quizley.entity.users.Users;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -42,6 +43,11 @@ public class AiChat {
 
     private String summary;
 
+    @Getter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "chat_status", nullable = false)
+    private ChatStatus chatStatus = ChatStatus.OPEN;
+
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AiMessage> messages = new ArrayList<>();
 
@@ -49,5 +55,13 @@ public class AiChat {
     public void addMessage(AiMessage m) {
         messages.add(m);
         m.setChat(this);
+    }
+
+    public void close() {
+        this.chatStatus = ChatStatus.CLOSED;
+    }
+
+    public void open() {
+        this.chatStatus = ChatStatus.OPEN;
     }
 }

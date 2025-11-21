@@ -3,20 +3,32 @@ package com.example.quizley.service;
 import com.example.quizley.config.claude.ClaudeClient;
 import com.example.quizley.config.claude.PromptLoader;
 import com.example.quizley.config.claude.WeekdayPromptType;
+import com.example.quizley.domain.ChatStatus;
+import com.example.quizley.domain.CommentAnonymous;
 import com.example.quizley.domain.MessageOrigin;
+import com.example.quizley.domain.Status;
+import com.example.quizley.dto.quiz.ChatInsightResDto;
 import com.example.quizley.dto.quiz.ChatMessageResDto;
 import com.example.quizley.dto.quiz.SentChatMessageResDto;
+import com.example.quizley.dto.quiz.TopCommentDto;
+import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.AiMessage;
+import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.AiChatRepository;
 import com.example.quizley.repository.AiMessageRepository;
+import com.example.quizley.repository.CommentRepository;
+import com.example.quizley.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
+
+// 채팅 서비스
 @Service
 @RequiredArgsConstructor
 public class ChatService {
@@ -25,6 +37,8 @@ public class ChatService {
     private final AiMessageRepository aiMessageRepository;
     private final ClaudeClient claudeClient;
     private final PromptLoader promptLoader;
+    private final CommentRepository commentRepository;
+    private final UsersRepository usersRepository;
 
     // 채팅/요약에 쓸 모델과 토큰 설정
     @Value("${app.anthropic.chat.txt-model:${app.anthropic.model}}")
@@ -116,8 +130,6 @@ public class ChatService {
                 .summary(newLineSummary)
                 .build();
     }
-
-    // ====== 여기부터는 예전 ChatClaudeLiveGateway 로직을 옮겨온 부분 ======
 
     // 채팅 + 한줄 요약 생성
     private ChatResult chatWithSummary(
@@ -220,5 +232,169 @@ public class ChatService {
 
         sb.append("[현재 사용자 메시지]\n").append(currentUserMessage);
         return sb.toString();
+    }
+
+    // 누적 summary 합치기 + feedback 생성
+    @Transactional
+    public ChatInsightResDto summarizeAndFeedback(Long chatId, Long userId) {
+
+        var chat = aiChatRepository.findByChatIdAndUsers_UserId(chatId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("CHAT_NOT_FOUND"));
+
+        var quiz = chat.getQuiz();
+
+        // 날짜 포맷
+        var dateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd. (E)")
+                .withLocale(Locale.KOREAN);
+
+        String dateStr = quiz.getPublishedDate() != null
+                ? quiz.getPublishedDate().format(dateFormatter)
+                : "";
+
+        // 1) topCommentDtoList 구성
+        var popularComments = commentRepository
+                .findInsightCommentsByQuizIdExceptUser(quiz.getQuizId(), userId);
+
+        var top3 = popularComments.stream()
+                .limit(3)
+                .toList();
+
+        var topCommentDtoList = top3.stream()
+                .map(c -> {
+                    TopCommentDto dto = new TopCommentDto();
+                    dto.setCommentId(c.getCommentId());
+                    dto.setComment(c.getContent());
+                    return dto;
+                })
+                .toList();
+
+        // 2) ChatStatus 에 따라 분기
+        String finalSummary;
+        String finalFeedback;
+
+        if (chat.getChatStatus() == ChatStatus.CLOSED) {
+            // 이미 닫힌 채팅방: AI 다시 호출하지 말고 DB 값 그대로 사용
+
+            // summary 는 ai_chat.summary 에 최종본이 들어있다고 가정
+            finalSummary = chat.getSummary();
+
+            // feedback 은 comment.feedback 에 저장돼 있음
+            finalFeedback = commentRepository
+                    .findByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId)
+                    .map(Comment::getFeedback)
+                    .orElse(null);
+
+        } else {
+            // OPEN 이면: 지금 처음 요약/피드백 생성하는 상태
+
+            String historySummary = chat.getSummary();
+            if (historySummary == null || historySummary.isBlank()) {
+                throw new IllegalStateException("요약 데이터가 없습니다.");
+            }
+
+            var summaries = Arrays.stream(historySummary.split(" / "))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            if (summaries.isEmpty()) {
+                throw new IllegalStateException("요약 데이터가 없습니다.");
+            }
+
+            // 1) bot_summary.txt로 최종 요약본 생성
+            String mergedSummary = callBotSummary(summaries).trim();
+
+            // 2) feedback.txt로 피드백 생성
+            String feedback = callFeedback(mergedSummary).trim();
+
+            // 3) ai_chat.summary를 최종 요약본으로 덮어쓰기
+            chat.setSummary(mergedSummary);
+
+            // 4) Comment 생성 or 업데이트
+                    Comment comment = commentRepository
+                            .findByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId)
+                            .orElseGet(() -> {
+                                // 없으면 새로 생성
+                                Comment c = new Comment();
+                                Users user = usersRepository.getReferenceById(userId);
+
+                                c.setUser(user);
+                                c.setQuiz(quiz);
+
+                                // 사용자의 "최종 답변"으로 ai 요약본 삽입
+                                c.setContent(mergedSummary);
+
+                                c.setStatus(Status.PROGRESS);                     // 답변 완료 상태로 가정
+                                c.setCommentAnonymous(CommentAnonymous.CLOSE); // 등록 전에는 비공개
+                                c.setWriterAnonymous(false);                  // 기본은 익명 아님
+                                c.setLikeCount(0);
+
+                                return c;
+                            });
+
+                    // 새로 만들었든 기존이든, feedback은 여기서 세팅
+                    comment.setFeedback(feedback);
+                    commentRepository.save(comment);
+
+            // 5) 채팅방 상태를 CLOSED 로 변경
+            chat.close();
+
+            finalSummary = mergedSummary;
+            finalFeedback = feedback;
+        }
+
+        // 3) 최종 DTO 조립
+        ChatInsightResDto dto = new ChatInsightResDto();
+        dto.setChatId(chat.getChatId());
+        dto.setQuizId(quiz.getQuizId());
+        dto.setCategory(quiz.getCategory().name());
+        dto.setDate(dateStr);
+        dto.setQuizName(quiz.getContent());
+        dto.setSummary(finalSummary);
+        dto.setFeedback(finalFeedback);
+        dto.setTopCommentDtoList(topCommentDtoList);
+
+        return dto;
+    }
+
+
+    // 여러 줄 summary → 하나의 자연스러운 요약본
+    private String callBotSummary(List<String> summaries) {
+        String systemPrompt = promptLoader.load(WeekdayPromptType.BOT_SUMMARY);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("[SYSTEM]\n").append(systemPrompt).append("\n\n");
+        sb.append("[SUMMARY LIST]\n");
+
+        for (int i = 0; i < summaries.size(); i++) {
+            sb.append(i + 1).append(". ").append(summaries.get(i)).append("\n");
+        }
+
+        String finalPrompt = sb.toString();
+
+        return claudeClient.call(
+                summaryModel,
+                summaryMaxTokens.longValue(),
+                0.2,
+                finalPrompt
+        );
+    }
+
+    // 최종 요약본(= 사용자의 대답)에 대한 피드백
+    private String callFeedback(String mergedSummary) {
+        String systemPrompt = promptLoader.load(WeekdayPromptType.FEEDBACK);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("[SYSTEM]\n").append(systemPrompt).append("\n\n");
+        sb.append("[USER ANSWER]\n").append(mergedSummary);
+
+        String finalPrompt = sb.toString();
+
+        return claudeClient.call(
+                chatModel,
+                chatMaxTokens.longValue(),
+                0.3,
+                finalPrompt
+        );
     }
 }
