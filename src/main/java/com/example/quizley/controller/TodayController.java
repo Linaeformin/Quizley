@@ -1,7 +1,6 @@
 package com.example.quizley.controller;
 
 import com.example.quizley.config.CustomUserDetails;
-import com.example.quizley.config.claude.ChatClaudeGateway;
 import com.example.quizley.domain.Category;
 import com.example.quizley.dto.quiz.ChatRoomFormDto;
 import com.example.quizley.dto.quiz.ChatRoomResDto;
@@ -9,7 +8,6 @@ import com.example.quizley.dto.quiz.SentChatMessageFormDto;
 import com.example.quizley.dto.quiz.SentChatMessageResDto;
 import com.example.quizley.service.ChatService;
 import com.example.quizley.service.QuizService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

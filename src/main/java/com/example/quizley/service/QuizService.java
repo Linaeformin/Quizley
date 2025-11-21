@@ -1,6 +1,5 @@
 package com.example.quizley.service;
 
-import com.example.quizley.config.claude.ChatClaudeGateway;
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
 import com.example.quizley.entity.quiz.AiChat;
@@ -9,7 +8,6 @@ import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
