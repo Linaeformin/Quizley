@@ -148,4 +148,22 @@ public class TodayController {
                 new ApiSuccess(200, "성공적으로 처리되었습니다.")
         );
     }
+
+    // [홈] 오늘의 퀴즈 답변 커뮤니티에 공유
+    @PatchMapping("/{chatId}/share")
+    public ResponseEntity<?> share(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Long chatId,
+            @RequestBody ChatCommentOpenFormDto dto
+    ) throws Exception {
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        quizService.share(chatId, me.getId(), dto);
+
+        return ResponseEntity.ok(
+                new ApiSuccess(200, "성공적으로 처리되었습니다.")
+        );
+    }
 }

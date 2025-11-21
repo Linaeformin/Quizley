@@ -335,7 +335,7 @@ public class QuizService {
         Comment comment = commentRepository.findByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND"));
 
-        // 5. 이미 DONE이면 그냥 리턴 (원하면 예외 던져도 됨)
+        // 5. 이미 DONE이면 그냥 리턴
         if (comment.getStatus() == Status.DONE) {
             return;
         }
@@ -343,6 +343,44 @@ public class QuizService {
         // 6. 상태 변경 + 수정 시간 갱신
         comment.setStatus(Status.DONE);
         comment.setModifiedAt(LocalDateTime.now(ZONE));
+    }
+
+    // [홈] 오늘의 질문 답변 커뮤니티 공유
+    @Transactional
+    public void share(Long chatId, Long userId, ChatCommentOpenFormDto dto) {
+        // 1. 채팅방 존재 여부 체크
+        AiChat chat = aiChatRepository.findById(chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CHAT_NOT_FOUND"));
+
+        // 2. 채팅방 주인인지 체크
+        if (!chat.getUsers().getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // 3. 채팅에 연결된 퀴즈 가져오기
+        Quiz quiz = chat.getQuiz();
+
+        // 4. 해당 퀴즈 + 유저로 댓글 찾기 (soft delete 고려)
+        Comment comment = commentRepository
+                .findByQuiz_QuizIdAndUser_UserIdAndDeletedAtIsNull(quiz.getQuizId(), userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND"));
+
+        // 5. 아직 답변 진행 중이면 공유 불가 (선택)
+        if (comment.getStatus() != Status.DONE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "COMMENT_NOT_DONE");
+        }
+
+        // 6. 공개 / 비공개 설정
+        // comment_anonymous == true → OPEN(공개), false → CLOSE(비공개)라고 가정
+        comment.setCommentAnonymous(
+                dto.isComment_anonymous() ? CommentAnonymous.OPEN : CommentAnonymous.CLOSE
+        );
+
+        // 7. 작성자 익명 여부
+        comment.setWriterAnonymous(dto.isWriter_anonymous());
+
+        // 8. modifiedAt 은 @PreUpdate에서 자동으로 업데이트됨
+        // 따로 setModifiedAt() 안 해도 됨 (지금 엔티티에 @PreUpdate 있음)
     }
 }
 
