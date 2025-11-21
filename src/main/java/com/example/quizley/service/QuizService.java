@@ -378,9 +378,22 @@ public class QuizService {
 
         // 7. 작성자 익명 여부
         comment.setWriterAnonymous(dto.isWriter_anonymous());
+    }
 
-        // 8. modifiedAt 은 @PreUpdate에서 자동으로 업데이트됨
-        // 따로 setModifiedAt() 안 해도 됨 (지금 엔티티에 @PreUpdate 있음)
+    // 퀴즐리봇 요약 수정
+    @Transactional
+    public void editSummary(Long chatId, Long userId, ChatSummaryFormDto dto) {
+        // 1) 채팅 찾기
+        AiChat aiChat = aiChatRepository.findById(chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "NOT_FOUND"));
+
+        // 2) 해당 채팅의 주인인지 체크
+        if (!aiChat.getUsers().getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "FORBIDDEN");
+        }
+
+        // 요약 메시지 수정
+        aiChat.setSummary(dto.getSummary());
     }
 }
 

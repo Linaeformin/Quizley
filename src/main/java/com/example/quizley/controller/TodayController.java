@@ -166,4 +166,22 @@ public class TodayController {
                 new ApiSuccess(200, "성공적으로 처리되었습니다.")
         );
     }
+
+    // 퀴즐리봇 요약 수정
+    @PatchMapping("/{chatId}/summary")
+    public ResponseEntity<?> summary(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Long chatId,
+            @RequestBody ChatSummaryFormDto dto
+    ) throws Exception {
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        quizService.editSummary(chatId, me.getId(), dto);
+
+        return ResponseEntity.ok(
+                new ApiSuccess(200, "성공적으로 처리되었습니다.")
+        );
+    }
 }
