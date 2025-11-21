@@ -99,4 +99,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             @Param("quizId") Long quizId,
             @Param("userId") Long userId
     );
+
+    // 삭제되지 않은 댓글을 찾는 메소드
+    Optional<Comment> findByQuiz_QuizIdAndUser_UserIdAndDeletedAtIsNull(Long quizId, Long userId);
 }
