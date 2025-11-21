@@ -264,8 +264,11 @@ public class QuizService {
             page = 0;
         }
 
-        // 5) 실제 페이지 최신순 조회
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // 5) 실제 페이지 최신순 조회, createdAt이 같다면 PK순으로
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt")
+                .and(Sort.by(Sort.Direction.DESC, "messageId")); // 엔티티 필드명이 id면 "id"로 바꿔!
+
+        Pageable pageable = PageRequest.of(page, size, sort);
         Page<AiMessage> messagePage = aiMessageRepository.findByChatChatId(chatId, pageable);
 
         // 현재 페이지 번호
