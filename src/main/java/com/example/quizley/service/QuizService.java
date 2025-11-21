@@ -2,6 +2,7 @@ package com.example.quizley.service;
 
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
+import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.AiChat;
 import com.example.quizley.entity.quiz.AiMessage;
 import com.example.quizley.entity.quiz.Quiz;
@@ -312,6 +313,36 @@ public class QuizService {
                 .hasPrev(hasPrev)
                 .hasNext(hasNext)
                 .build();
+    }
+
+    // 답변 완료 처리
+    @Transactional
+    public void completeComment(Long chatId, Long userId) {
+
+        // 1. 채팅방 존재 여부 체크
+        AiChat chat = aiChatRepository.findById(chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CHAT_NOT_FOUND"));
+
+        // 2. 채팅방 주인인지 체크
+        if (!chat.getUsers().getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // 3. 채팅에 연결된 퀴즈 가져오기
+        Quiz quiz = chat.getQuiz();
+
+        // 4. 해당 퀴즈 + 유저로 댓글 찾기
+        Comment comment = commentRepository.findByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND"));
+
+        // 5. 이미 DONE이면 그냥 리턴 (원하면 예외 던져도 됨)
+        if (comment.getStatus() == Status.DONE) {
+            return;
+        }
+
+        // 6. 상태 변경 + 수정 시간 갱신
+        comment.setStatus(Status.DONE);
+        comment.setModifiedAt(LocalDateTime.now(ZONE));
     }
 }
 

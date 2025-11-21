@@ -1,5 +1,6 @@
 package com.example.quizley.controller;
 
+import com.example.quizley.common.ApiSuccess;
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.domain.Category;
 import com.example.quizley.dto.quiz.*;
@@ -127,5 +128,24 @@ public class TodayController {
         ChatInsightResDto result = chatService.summarizeAndFeedback(chatId, me.getId());
 
         return ResponseEntity.ok(result);
+    }
+
+    // [홈] 오늘의 질문 답변 완료 상태로 변경
+    @PatchMapping("/{chatId}/comment")
+    public ResponseEntity<?> completeComment(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Long chatId
+    ) {
+        // 권한이 없을 때
+        if (me == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // 서비스 호출해서 status DONE으로 변경
+        quizService.completeComment(chatId, me.getId());
+
+        return ResponseEntity.ok(
+                new ApiSuccess(200, "성공적으로 처리되었습니다.")
+        );
     }
 }

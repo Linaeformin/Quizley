@@ -93,14 +93,10 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "AND c.deletedAt IS NULL " +
             "AND c.status = com.example.quizley.domain.Status.DONE " +
             "AND c.commentAnonymous = com.example.quizley.domain.CommentAnonymous.OPEN " +
-            "AND c.user.userId <> :userId " +   // ✅ 내 댓글 제외
+            "AND c.user.userId <> :userId " +
             "ORDER BY c.likeCount DESC, c.createdAt DESC")
     List<CommentDto> findInsightCommentsByQuizIdExceptUser(
             @Param("quizId") Long quizId,
             @Param("userId") Long userId
     );
-
-
-
-
 }
