@@ -5,7 +5,9 @@ package com.example.quizley.config.claude;
 public enum WeekdayPromptType {
     QUIZ("quiz"),
     CHAT("chat"),
-    SUMMARY("summary");
+    SUMMARY("summary"),
+    BOT_SUMMARY("bot_summary"),
+    FEEDBACK("feedback"),;
 
     private final String fileName;
 

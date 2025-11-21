@@ -1,15 +1,10 @@
 package com.example.quizley.controller;
 
 import com.example.quizley.config.CustomUserDetails;
-import com.example.quizley.config.claude.ChatClaudeGateway;
 import com.example.quizley.domain.Category;
-import com.example.quizley.dto.quiz.ChatRoomFormDto;
-import com.example.quizley.dto.quiz.ChatRoomResDto;
-import com.example.quizley.dto.quiz.SentChatMessageFormDto;
-import com.example.quizley.dto.quiz.SentChatMessageResDto;
+import com.example.quizley.dto.quiz.*;
 import com.example.quizley.service.ChatService;
 import com.example.quizley.service.QuizService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -113,6 +108,23 @@ public class TodayController {
 
         // 채팅 메시지 결과 생성
         SentChatMessageResDto result = chatService.chat(chatId, me.getId(), userMessage);
+
+        return ResponseEntity.ok(result);
+    }
+
+    // [홈] 오늘의 인사이트 데이터 반환
+    @GetMapping("/{chatId}/summary")
+    public ResponseEntity<ChatInsightResDto> getSummary(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @PathVariable Long chatId
+    ) {
+        // 권한이 없을 때
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // 인사이트 데이터 반환
+        ChatInsightResDto result = chatService.summarizeAndFeedback(chatId, me.getId());
 
         return ResponseEntity.ok(result);
     }

@@ -1,6 +1,5 @@
 package com.example.quizley.service;
 
-import com.example.quizley.config.claude.ChatClaudeGateway;
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
 import com.example.quizley.entity.quiz.AiChat;
@@ -9,7 +8,6 @@ import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -266,7 +264,7 @@ public class QuizService {
 
         // 5) 실제 페이지 최신순 조회, createdAt이 같다면 PK순으로
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt")
-                .and(Sort.by(Sort.Direction.DESC, "messageId")); // 엔티티 필드명이 id면 "id"로 바꿔!
+                .and(Sort.by(Sort.Direction.DESC, "messageId"));
 
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<AiMessage> messagePage = aiMessageRepository.findByChatChatId(chatId, pageable);

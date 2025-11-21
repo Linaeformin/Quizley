@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 // 댓글, 응답 레포지토리
 public interface CommentRepository extends JpaRepository<Comment, Long> {
@@ -69,4 +70,37 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "AND c.deletedAt IS NULL " +
             "ORDER BY c.likeCount DESC, c.createdAt DESC")
     List<CommentDto> findCommentsByQuizIdOrderByPopular(@Param("quizId") Long quizId, @Param("userId") Long userId);
+
+    // 퀴즈 id과 유저 id로 의견 찾기
+    Optional<Comment> findByQuiz_QuizIdAndUser_UserId(Long quizId, Long userId);
+
+    // 인사이트용: DONE + OPEN + 내 댓글 제외 + 인기순
+    @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
+            "c.commentId, c.content, " +
+            "CASE WHEN c.writerAnonymous = true THEN " +
+            "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
+            "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
+            "AND c2.createdAt <= c.createdAt AND c2.deletedAt IS NULL) AS string)) " +
+            "ELSE u.nickname END, " +
+            "c.likeCount, " +
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +
+            "      ELSE false END), " +
+            "c.createdAt) " +
+            "FROM Comment c " +
+            "LEFT JOIN c.user u " +
+            "WHERE c.quiz.quizId = :quizId " +
+            "AND c.deletedAt IS NULL " +
+            "AND c.status = com.example.quizley.domain.Status.DONE " +
+            "AND c.commentAnonymous = com.example.quizley.domain.CommentAnonymous.OPEN " +
+            "AND c.user.userId <> :userId " +   // ✅ 내 댓글 제외
+            "ORDER BY c.likeCount DESC, c.createdAt DESC")
+    List<CommentDto> findInsightCommentsByQuizIdExceptUser(
+            @Param("quizId") Long quizId,
+            @Param("userId") Long userId
+    );
+
+
+
+
 }
