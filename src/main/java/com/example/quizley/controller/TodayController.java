@@ -149,7 +149,7 @@ public class TodayController {
         );
     }
 
-    // [홈] 오늘의 퀴즈 답변 커뮤니티에 공유
+    // [홈]
     @PatchMapping("/{chatId}/share")
     public ResponseEntity<?> share(
             @AuthenticationPrincipal CustomUserDetails me,

@@ -173,4 +173,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     @Query("SELECT COUNT(q) FROM Quiz q WHERE q.content LIKE %:keyword%")
     Long countByContentContaining(@Param("keyword") String keyword);
 
+    // 내가 작성한 게시글 조회
+    List<Quiz> findByUserIdAndOriginOrderByCreatedAtDesc(Long userId, Origin origin);
+
 }

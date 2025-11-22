@@ -24,4 +24,14 @@ public class ProfileController {
         ProfileResponseDto response = profileService.getMyProfile(me);
         return ResponseEntity.ok(response);
     }
+
+    // 내가 작성한 게시글 조회
+    @GetMapping("/me/posts")
+    public ResponseEntity<?> getMyPosts(
+            @AuthenticationPrincipal CustomUserDetails me) {
+
+        if (me == null) return ResponseEntity.status(401).build();
+
+        return ResponseEntity.ok(profileService.getMyPosts(me.getId()));
+    }
 }
