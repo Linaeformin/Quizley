@@ -28,5 +28,8 @@ public interface BalanceAnswerRepository extends JpaRepository<BalanceAnswer, Lo
 
     // 특정 퀴즈에서 특정 사용자의 선택 조회
     Optional<BalanceAnswer> findByQuizIdAndUserId(Long quizId, Long userId);
+
+    // 특정 유저가 이 주말 퀴즈에 이미 답변했는지 여부
+    boolean existsByQuizIdAndUserId(Long quizId, Long userId);
 }
 

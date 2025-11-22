@@ -67,8 +67,6 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     Optional<Quiz> findByQuizId(Long quizId);
 
-
-
     // 오늘의 퀴즈 좋아요 여부 확인용
     @Query("SELECT " +
             "(CASE WHEN :userId IS NULL THEN false " +
@@ -178,5 +176,12 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     // 내가 작성한 게시글 조회
     List<Quiz> findByUserIdAndOriginOrderByCreatedAtDesc(Long userId, Origin origin);
+
+    // 주말용 (카테고리 X)
+    Optional<Quiz> findFirstByOriginAndTypeAndPublishedDate(
+            Origin origin,
+            QuizType type,
+            LocalDate publishedDate
+    );
 
 }

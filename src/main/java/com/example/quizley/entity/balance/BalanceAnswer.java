@@ -23,6 +23,7 @@ public class BalanceAnswer {
     @Column(name = "user_id", nullable = false)
     private Long userId;  // 유저 ID
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BalanceSide side; // 선택한 답변 (A/B)
 
