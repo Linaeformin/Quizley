@@ -1,8 +1,6 @@
 package com.example.quizley.controller;
 import com.example.quizley.config.CustomUserDetails;
-import com.example.quizley.dto.calendar.CalendarResponseDto;
 import com.example.quizley.dto.report.ReportResponseDto;
-import com.example.quizley.entity.users.Users;
 import com.example.quizley.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
