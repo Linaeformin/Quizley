@@ -1,5 +1,6 @@
 package com.example.quizley.service;
 
+import com.example.quizley.common.level.LevelService;
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
 import com.example.quizley.entity.balance.BalanceAnswer;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 
 
 // 퀴즈 서비스
@@ -46,8 +48,11 @@ public class QuizService {
     private final UsersRepository usersRepository;
     private final ChatService chatService;
     private final QuizBalanceRepository quizBalanceRepository;
-    private final S3Service s3Service;
+    private final LevelService levelService;
     private final BalanceAnswerRepository balanceAnswerRepository;
+
+    private final Integer ACCESS_POINT = 10;
+    private final Integer ANSWER_POINT = 100;
 
     // 퀴즈 생성 및 일주일 뒤 공개 설정
     @Transactional
@@ -130,6 +135,9 @@ public class QuizService {
 
         String roomDate = quiz.getPublishedDate().format(roomDateFormatter);
 
+        // 레벨업
+        levelService.tryLevelUp(userId, ACCESS_POINT);
+
         // 오늘의 질문 실제 반환
         return WeekdayQuizResDto.of(quiz, completed, roomDate);
     }
@@ -150,8 +158,6 @@ public class QuizService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CATEGORY");
         }
     }
-
-    // TODO : 주말 오늘의 질문 추출
 
     // 채팅방 생성
     @Transactional
@@ -357,6 +363,9 @@ public class QuizService {
         // 6. 상태 변경 + 수정 시간 갱신
         comment.setStatus(Status.DONE);
         comment.setModifiedAt(LocalDateTime.now(ZONE));
+
+        // 레벨업
+        levelService.tryLevelUp(userId, ANSWER_POINT);
     }
 
     // [홈] 오늘의 질문 답변 커뮤니티 공유
@@ -440,6 +449,9 @@ public class QuizService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INVALID_BALANCE_CONFIG");
         }
 
+        // 레벨업
+        levelService.tryLevelUp(userId, ACCESS_POINT);
+
         // 주말 오늘의 밸런스 질문 실제 반환
         return WeekendQuizResDto.of(quiz, completed, roomDate, balances);
     }
@@ -473,6 +485,9 @@ public class QuizService {
         answer.setCreatedAt(LocalDateTime.now());
 
         balanceAnswerRepository.save(answer);
+
+        // 레벨업
+        levelService.tryLevelUp(userId, ANSWER_POINT);
     }
 }
 
