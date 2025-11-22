@@ -315,6 +315,7 @@ public class CommunityDetailService {
     // 댓글 삭제
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
+        // 댓글 확인
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND"));
 
@@ -323,7 +324,7 @@ public class CommunityDetailService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
         }
 
-        // soft delete
+        // 삭제
         comment.setDeletedAt(LocalDateTime.now());
         commentRepository.save(comment);
     }
