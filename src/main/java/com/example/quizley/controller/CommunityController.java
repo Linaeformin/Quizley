@@ -214,7 +214,7 @@ public class CommunityController {
         return ResponseEntity.ok(body);
     }
 
-    // 사용자 차단
+    // 게시글 사용자 차단
     @PostMapping("/user/{userId}/block")
     public ResponseEntity<Map<String, Object>> blockUser(
             @PathVariable Long userId,

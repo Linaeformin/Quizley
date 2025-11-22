@@ -356,7 +356,7 @@ public class CommunityDetailService {
         reportUserRepository.save(report);
     }
 
-    // 사용자 차단
+    // 게시글 사용자 차단
     @Transactional
     public void blockUser(Long blockedUserId, Long currentUserId) {
         // 자기 자신을 차단할 수 없음
