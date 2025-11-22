@@ -80,7 +80,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     //HOT 게시글 조회(카테고리별)
     @Query("SELECT new com.example.quizley.dto.community.HotQuizDto(" +
-            "q.quizId, q.content, q.category, u.nickname, " +
+            "q.quizId, q.content, q.category, " +
+            "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
             "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
             "q.createdAt, " +
@@ -103,7 +104,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     //게시글 목록 조회(카테고리 필터링)
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
-            "q.quizId, q.content, q.category, u.nickname, " +
+            "q.quizId, q.content, q.category, " +
+            "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
             "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
             "q.createdAt, q.publishedDate, " +
@@ -125,7 +127,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     //게시글 목록 조회(전체)
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
-            "q.quizId, q.content, q.category, u.nickname, " +
+            "q.quizId, q.content, q.category, " +
+            "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
             "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
             "q.createdAt, q.publishedDate, " +
