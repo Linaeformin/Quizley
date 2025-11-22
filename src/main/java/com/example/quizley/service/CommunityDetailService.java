@@ -328,7 +328,7 @@ public class CommunityDetailService {
         commentRepository.save(comment);
     }
 
-    // 댓글 신고
+    // 다른 유저의 댓글 신고
     @Transactional
     public void reportComment(Long commentId, Long userId) {
         // 댓글 존재 확인
@@ -383,15 +383,6 @@ public class CommunityDetailService {
                 .build();
 
         blockUserRepository.save(blockUser);
-    }
-
-    // 사용자 차단 해제
-    @Transactional
-    public void unblockUser(Long blockedUserId, Long currentUserId) {
-        BlockUser blockUser = blockUserRepository.findByBlockerIdAndBlockedId(currentUserId, blockedUserId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BLOCK_NOT_FOUND"));
-
-        blockUserRepository.delete(blockUser);
     }
 
     // 게시물 수정

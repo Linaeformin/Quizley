@@ -196,7 +196,7 @@ public class CommunityController {
         return ResponseEntity.ok(body);
     }
 
-    // 댓글 신고
+    // 다른 유저의 댓글 신고
     @PostMapping("/comment/{commentId}/report")
     public ResponseEntity<Map<String, Object>> reportComment(
             @PathVariable Long commentId,
@@ -229,24 +229,6 @@ public class CommunityController {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", 200);
         body.put("message", "사용자 차단 완료");
-        return ResponseEntity.ok(body);
-    }
-
-    // 사용자 차단 해제
-    @DeleteMapping("/user/{userId}/block")
-    public ResponseEntity<Map<String, Object>> unblockUser(
-            @PathVariable Long userId,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        if (userDetails == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        communityDetailService.unblockUser(userId, (long) userDetails.getId());
-
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("status", 200);
-        body.put("message", "사용자 차단 해제 완료");
         return ResponseEntity.ok(body);
     }
 
