@@ -249,4 +249,26 @@ public class CommunityController {
         body.put("message", "사용자 차단 해제 완료");
         return ResponseEntity.ok(body);
     }
+
+    // 퀴즈 검색
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchQuizzes(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "latest") String sortBy,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long currentUserId = (userDetails != null) ? (long) userDetails.getId() : null;
+        QuizSearchResponse response = communityService.searchQuizzes(keyword, sortBy, currentUserId);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "퀴즈 검색 성공");
+        body.put("data", response);
+
+        return ResponseEntity.ok(body);
+    }
 }

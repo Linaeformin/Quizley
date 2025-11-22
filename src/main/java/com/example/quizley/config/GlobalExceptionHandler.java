@@ -94,6 +94,7 @@ public class GlobalExceptionHandler {
             case "ALREADY_BLOCKED" -> "이미 차단한 사용자입니다.";
             case "BLOCK_NOT_FOUND" -> "차단 정보를 찾을 수 없습니다.";
             case "CLOSED_CHAT" -> "닫힌 채팅방입니다.";
+            case "INVALID_KEYWORD" -> "검색어를 입력해주세요.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);
