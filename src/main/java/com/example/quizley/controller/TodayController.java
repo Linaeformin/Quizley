@@ -31,15 +31,10 @@ public class TodayController {
     @GetMapping(value = "")
     public ResponseEntity<?> findTodayQuiz(
             @AuthenticationPrincipal CustomUserDetails me,
-            @RequestParam Category category
-    ) throws Exception {
+            @RequestParam(required = false) Category category
+    ) {
         // 권한이 없을 때
         if (me == null) return ResponseEntity.status(401).build();
-
-        // 카테고리가 비어있을 때
-        if (category == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CATEGORY");
-        }
 
         // 오늘 날짜 조회
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -48,13 +43,22 @@ public class TodayController {
         // 주말 여부 확인
         boolean weekend = (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY);
 
-        // 평일이라면
+        // 평일
         if (!weekend) {
-            return ResponseEntity.ok(quizService.getWeekdayQuiz(today, String.valueOf(category), me.getId()));
+            // 카테고리 검증
+            if (category == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CATEGORY");
+            }
+
+            return ResponseEntity.ok(
+                    quizService.getWeekdayQuiz(today, String.valueOf(category), me.getId())
+            );
         }
 
-        // TODO : 주말일 때 데이터 반환
-        return ResponseEntity.ok(quizService.getWeekdayQuiz(today, String.valueOf(category), me.getId()));
+        // 주말
+        return ResponseEntity.ok(
+                quizService.getWeekendQuiz(today, me.getId())
+        );
     }
 
     // 평일 오늘의 퀴즈 AI 채팅방 생성

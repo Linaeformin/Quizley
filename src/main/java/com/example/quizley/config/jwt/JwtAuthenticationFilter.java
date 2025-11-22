@@ -32,7 +32,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final Set<String> whitelist = Set.of(
             "/api/users/login",
             "/api/users/signup",
-            "/admin/quiz/generate"
+            "/admin/quiz/generate",
+            "/upload",
+            "/admin/quiz/balance"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();

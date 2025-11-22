@@ -95,6 +95,8 @@ public class GlobalExceptionHandler {
             case "BLOCK_NOT_FOUND" -> "차단 정보를 찾을 수 없습니다.";
             case "CLOSED_CHAT" -> "닫힌 채팅방입니다.";
             case "INVALID_KEYWORD" -> "검색어를 입력해주세요.";
+            case "INVALID_BALANCE_CONFIG" -> "밸런스 게임 선택지 에러";
+            case "NO_ANTHROPIC" -> "AI API KEY 오류";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);

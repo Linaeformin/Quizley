@@ -50,4 +50,20 @@ public class Quiz {
     }
 
     @PreUpdate void up(){ modifiedAt = LocalDateTime.now(); }
+
+    // 밸런스 게임용 생성자 메서드
+    public static Quiz createUserWeekendQuiz(String content,
+                                             Long userId,
+                                             boolean isAnonymous,
+                                             LocalDate publishedDate) {
+        Quiz quiz = new Quiz();
+        quiz.origin = Origin.USER;
+        quiz.type = QuizType.WEEKEND;
+        quiz.content = content;
+        quiz.category = null;
+        quiz.userId = userId;
+        quiz.isAnonymous = isAnonymous;
+        quiz.publishedDate = publishedDate;
+        return quiz;
+    }
 }

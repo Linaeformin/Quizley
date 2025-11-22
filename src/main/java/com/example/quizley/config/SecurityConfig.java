@@ -91,6 +91,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/login").permitAll()
                         .requestMatchers("/api/users/refresh").permitAll()
                         .requestMatchers("/admin/quiz/generate").permitAll()
+                        .requestMatchers("/upload").permitAll()
+                        .requestMatchers("/admin/quiz/balance").permitAll()
                         .requestMatchers("/debug/claude/**").permitAll()
 
                         // 어드민 보호

@@ -2,21 +2,26 @@ package com.example.quizley.service;
 
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
+import com.example.quizley.entity.balance.QuizBalance;
 import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.AiChat;
 import com.example.quizley.entity.quiz.AiMessage;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
+import com.example.quizley.storage.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,6 +44,9 @@ public class QuizService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
     private final UsersRepository usersRepository;
     private final ChatService chatService;
+    private final QuizBalanceRepository quizBalanceRepository;
+    private final S3Service s3Service;
+    private final BalanceAnswerRepository balanceAnswerRepository;
 
     // 퀴즈 생성 및 일주일 뒤 공개 설정
     @Transactional
@@ -115,9 +123,14 @@ public class QuizService {
         // 사용자의 응답 여부
         boolean completed = commentRepository.existsByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId);
 
-        // TODO: 평일 오늘의 질문 반환 데이터 published_date 정제해서 반환, 오늘의 질문 채팅방 생성 시 채팅 ID 반환
+        // 채팅방 생성 날짜 및 요일 포맷
+        DateTimeFormatter roomDateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd. (E)")
+                .withLocale(Locale.KOREAN);
+
+        String roomDate = quiz.getPublishedDate().format(roomDateFormatter);
+
         // 오늘의 질문 실제 반환
-        return WeekdayQuizResDto.of(quiz, completed);
+        return WeekdayQuizResDto.of(quiz, completed, roomDate);
     }
 
     // 문자열로 받은 카테고리를 ENUM으로 변환
@@ -396,6 +409,38 @@ public class QuizService {
         aiChat.setSummary(dto.getSummary());
     }
 
+    // 주말 오늘의 밸런스 질문 추출
+    public WeekendQuizResDto getWeekendQuiz(LocalDate date, Long userId) {
 
+        // 오늘의 주말 퀴즈 조회 (SYSTEM + WEEKEND + 날짜)
+        Quiz quiz = quizRepository
+                .findFirstByOriginAndTypeAndPublishedDate(
+                        Origin.SYSTEM,
+                        QuizType.WEEKEND,
+                        date
+                )
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
+        // 사용자의 응답 여부 (주말 밸런스 답변 기록 기준)
+        boolean completed = balanceAnswerRepository
+                .existsByQuizIdAndUserId(quiz.getQuizId(), userId);
+
+        // 채팅방 생성 날짜 및 요일 포맷
+        DateTimeFormatter roomDateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd. (E)")
+                .withLocale(Locale.KOREAN);
+
+        String roomDate = quiz.getPublishedDate().format(roomDateFormatter);
+
+        // 밸런스 선택지 조회 (A/B)
+        List<QuizBalance> balances = quizBalanceRepository
+                .findByQuizIdOrderBySideAsc(quiz.getQuizId());
+
+        if (balances.size() != 2) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INVALID_BALANCE_CONFIG");
+        }
+
+        // 주말 오늘의 밸런스 질문 실제 반환
+        return WeekendQuizResDto.of(quiz, completed, roomDate, balances);
+    }
 }
 
