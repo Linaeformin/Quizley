@@ -97,6 +97,9 @@ public class GlobalExceptionHandler {
             case "INVALID_KEYWORD" -> "검색어를 입력해주세요.";
             case "INVALID_BALANCE_CONFIG" -> "밸런스 게임 선택지 에러";
             case "NO_ANTHROPIC" -> "AI API KEY 오류";
+            case "CANNOT_EDIT_QUIZ_WITH_COMMENTS" -> "댓글이 달린 게시물은 수정할 수 없습니다.";
+            case "CANNOT_REPORT_OWN_QUIZ" -> "본인의 게시물은 신고할 수 없습니다.";
+            case "CANNOT_DELETE_QUIZ_WITH_ACTIVITY" -> "댓글이나 좋아요가 있는 게시물은 삭제할 수 없습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);

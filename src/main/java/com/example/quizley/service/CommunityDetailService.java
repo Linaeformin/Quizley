@@ -1,8 +1,5 @@
 package com.example.quizley.service;
-import com.example.quizley.domain.ContentType;
-import com.example.quizley.domain.Origin;
-import com.example.quizley.domain.QuizType;
-import com.example.quizley.domain.ReportAction;
+import com.example.quizley.domain.*;
 import com.example.quizley.dto.community.*;
 import com.example.quizley.entity.balance.BalanceAnswer;
 import com.example.quizley.entity.balance.QuizBalance;
@@ -127,15 +124,15 @@ public class CommunityDetailService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INVALID_BALANCE_DATA");
         }
 
-        // TODO: side 타입 ENUM으로 변경
+        // 수정: ENUM 비교로 변경
         QuizBalance sideA = balances.stream()
-                .filter(b -> "A".equals(b.getSide()))
+                .filter(b -> BalanceSide.A.equals(b.getSide()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "SIDE_A_NOT_FOUND"));
 
-        // TODO: side 타입 ENUM으로 변경
+        // 수정: ENUM 비교로 변경
         QuizBalance sideB = balances.stream()
-                .filter(b -> "B".equals(b.getSide()))
+                .filter(b -> BalanceSide.B.equals(b.getSide()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "SIDE_B_NOT_FOUND"));
 
@@ -146,10 +143,10 @@ public class CommunityDetailService {
         voteMap.put("A", 0L);
         voteMap.put("B", 0L);
 
-        // TODO : side 형 변환
+        // 수정: ENUM의 name() 사용
         for (BalanceAnswer answer : allAnswers) {
-            // String side = answer.getSide();
-            // voteMap.put(side, voteMap.getOrDefault(side, 0L) + 1);
+            String side = answer.getSide().name(); // A 또는 B
+            voteMap.put(side, voteMap.getOrDefault(side, 0L) + 1);
         }
 
         // 퍼센트 계산
@@ -166,7 +163,7 @@ public class CommunityDetailService {
             Optional<BalanceAnswer> userAnswer = balanceAnswerRepository.findByQuizIdAndUserId(quizId, currentUserId);
             if (userAnswer.isPresent()) {
                 // TODO : side 형 변환
-                // userSelectedSide = userAnswer.get().getSide();
+                userSelectedSide = userAnswer.get().getSide().name(); // "A" 또는 "B"
             }
         }
 
@@ -395,5 +392,87 @@ public class CommunityDetailService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BLOCK_NOT_FOUND"));
 
         blockUserRepository.delete(blockUser);
+    }
+
+    // 게시물 수정
+    @Transactional
+    public void updateUserQuiz(Long quizId, QuizCreateDto dto, Long userId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
+        if (quiz.getUserId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // 본인이 작성한 게시물인지 확인
+        if (!quiz.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // 댓글이 달렸는지 확인
+        Long commentCount = quizRepository.countCommentsByQuizId(quizId);
+        if (commentCount > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CANNOT_EDIT_QUIZ_WITH_COMMENTS");
+        }
+
+        // 수정
+        quiz.setContent(dto.getContent());
+        quiz.setCategory(dto.getCategory());
+        if (dto.getIsAnonymous() != null) {
+            quiz.setIsAnonymous(dto.getIsAnonymous());
+        }
+
+        quizRepository.save(quiz);
+    }
+
+    // 게시물 삭제 (soft delete)
+    @Transactional
+    public void deleteUserQuiz(Long quizId, Long userId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
+        if (quiz.getUserId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // 본인이 작성한 게시물인지 확인
+        if (!quiz.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        quizRepository.delete(quiz);
+    }
+
+    // 게시물 신고
+    @Transactional
+    public void reportQuiz(Long quizId, Long userId) {
+        // 게시물 존재 확인
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
+        // 본인 게시물은 신고 불가
+        if (quiz.getUserId() != null && quiz.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CANNOT_REPORT_OWN_QUIZ");
+        }
+
+        // 이미 신고했는지 확인
+        boolean alreadyReported = reportUserRepository.existsByReporterIdAndContentTypeAndContentId(
+                userId, ContentType.QUESTION, quizId
+        );
+
+        if (alreadyReported) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ALREADY_REPORTED");
+        }
+
+        // 신고 생성
+        ReportUser report = ReportUser.builder()
+                .reporterId(userId)
+                .contentType(ContentType.QUESTION)
+                .contentId(quizId)
+                .action(ReportAction.NONE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        reportUserRepository.save(report);
     }
 }
