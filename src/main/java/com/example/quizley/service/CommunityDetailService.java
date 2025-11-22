@@ -384,7 +384,7 @@ public class CommunityDetailService {
         blockUserRepository.save(blockUser);
     }
 
-    // 게시물 수정
+    // 커뮤니티 게시물 수정
     @Transactional
     public void updateUserQuiz(Long quizId, QuizCreateDto dto, Long userId) {
         Quiz quiz = quizRepository.findById(quizId)
@@ -405,7 +405,7 @@ public class CommunityDetailService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CANNOT_EDIT_QUIZ_WITH_COMMENTS");
         }
 
-        // 수정
+        // 게시글 수정
         quiz.setContent(dto.getContent());
         quiz.setCategory(dto.getCategory());
         if (dto.getIsAnonymous() != null) {
