@@ -9,7 +9,15 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "balance_answer")
+@Table(
+        name = "balance_answer",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_balance_answer_quiz_user",
+                        columnNames = {"quiz_id", "user_id"}
+                )
+        }
+)
 public class BalanceAnswer {
 
     @Id
