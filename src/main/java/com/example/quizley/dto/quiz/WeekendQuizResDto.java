@@ -5,27 +5,28 @@ import com.example.quizley.entity.balance.QuizBalance;
 import com.example.quizley.entity.quiz.Quiz;
 import lombok.Builder;
 import lombok.Getter;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+// 주말 오늘의 밸런스 게임 반환
 @Getter
 @Builder
 public class WeekendQuizResDto {
 
     private Long quizId;
     private String content;
-    private String publishedDate;          // "yyyy.MM.dd. (E)" 형식
-    private boolean completed;        // 유저 응답 여부
+    private String publishedDate;
+    private boolean completed;
     private QuizType quizType;
     private List<BalanceOptionDto> options;
 
     @Getter
     @Builder
     public static class BalanceOptionDto {
-        private String side;   // "A" or "B"
-        private String label;  // 선택지 텍스트
-        private String imgUrl; // 이미지 URL
+        private String side;
+        private String label;
+        private String imgUrl;
     }
 
     public static WeekendQuizResDto of(Quiz quiz,

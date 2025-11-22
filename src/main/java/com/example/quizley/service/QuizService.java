@@ -436,7 +436,6 @@ public class QuizService {
                 .findByQuizIdOrderBySideAsc(quiz.getQuizId());
 
         if (balances.size() != 2) {
-            // 테이블 제약상 2개가 정상인데, 아니면 설정 에러
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INVALID_BALANCE_CONFIG");
         }
 

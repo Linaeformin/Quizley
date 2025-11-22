@@ -16,16 +16,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import static com.example.quizley.config.claude.WeekdayPromptType.QUIZ;
 
+
+// 오늘의 퀴즈 생성 서비스
 @Service
 @RequiredArgsConstructor
 public class AdminQuizService {
@@ -45,12 +48,7 @@ public class AdminQuizService {
     @Value("${app.anthropic.max-tokens}")
     private Integer maxTokens;
 
-    /**
-     * 1) QUIZ 프롬프트 로드
-     * 2) Anthropic 호출 → JSON 문자열(또는 코드블록) 받기
-     * 3) Map<String,String>으로 파싱
-     * 4) QuizService.saveSystemWeekdayBulk(map) 호출
-     */
+    // 평일 퀴즈 생성
     @Transactional
     public int generateWeekdayQuizFromAi() {
         // 1) 프롬프트 로드
@@ -59,7 +57,7 @@ public class AdminQuizService {
         // 2) LLM 호출
         String joined = claudeClient.call(model, maxTokens.longValue(), 0.0, prompt);
         if (joined == null || joined.isBlank()) {
-            throw new IllegalStateException("Anthropic 응답이 비어 있습니다.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "NO_ANTHROPIC");
         }
 
         // 3) 코드펜스 제거 + JSON 오브젝트 추출
@@ -69,15 +67,14 @@ public class AdminQuizService {
         // 4) Map<String,String> 파싱
         Map<String,String> map = parseJsonMap(json);
         if (map.isEmpty()) {
-            throw new IllegalStateException("퀴즈 JSON 응답이 비어 있습니다.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CONSTRAINT_VIOLATION");
         }
 
         // 5) 기존 QuizService의 bulk 메서드 재사용
         return quizService.saveSystemWeekdayBulk(map);
     }
 
-    // ===== 아래는 예전 ClaudeLiveGateway에서 가져온 유틸 메서드들 =====
-
+    // JSON으로 응답 파싱
     private Map<String,String> parseJsonMap(String json) {
         try {
             return om.readValue(json, new TypeReference<Map<String,String>>() {});
@@ -88,6 +85,7 @@ public class AdminQuizService {
         }
     }
 
+    // 마크다운 삭제
     private static String stripFence(String s){
         if (s == null) return "";
         String t = s.trim();
@@ -102,6 +100,7 @@ public class AdminQuizService {
         return t;
     }
 
+    // 중괄호 꺼내기
     private static String extractJsonObject(String s){
         if (s == null) return "";
         int start = s.indexOf('{');
@@ -109,7 +108,7 @@ public class AdminQuizService {
         return (start >= 0 && end > start) ? s.substring(start, end + 1).trim() : s.trim();
     }
 
-
+    // 밸런스 게임 생성
     @Transactional
     public void createBalanceGame(
             WeekendQuizCreatedFormDto request,
@@ -129,7 +128,7 @@ public class AdminQuizService {
 
         Quiz savedQuiz = quizRepository.save(quiz);
 
-        // 2) 이미지 업로드 (여기서 헬퍼 사용)
+        // 2) 이미지 업로드
         String optionAUrl = uploadIfNotEmpty(optionAImage);
         String optionBUrl = uploadIfNotEmpty(optionBImage);
 
@@ -151,12 +150,12 @@ public class AdminQuizService {
         quizBalanceRepository.saveAll(List.of(balanceA, balanceB));
     }
 
+    // S3에 저장
     private String uploadIfNotEmpty(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
-            // 이미지 필수라면 여기서 예외 던져도 됨
-            throw new IllegalArgumentException("선택지 이미지가 비어 있습니다.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CONSTRAINT_VIOLATION");
         }
-        // dirName은 너가 원하는 대로 변경 가능 ("balance" 같은 거)
+        // balance 폴더에 저장
         return s3Service.uploadFile(file, "balance");
     }
 }

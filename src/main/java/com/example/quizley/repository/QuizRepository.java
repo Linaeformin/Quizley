@@ -42,7 +42,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             Pageable pageable
     );
 
-    //Origin 포함한 조회
+    // Origin 포함한 조회
     List<Quiz> findByPublishedDateAndOriginAndCategoryOrderByCreatedAtDesc(
             LocalDate publishedDate,
             Origin origin,
@@ -50,7 +50,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             Pageable pageable
     );
 
-    //특정 날짜, 특정 Origin의 질문 조회 (최신순)
+    // 특정 날짜, 특정 Origin의 질문 조회 (최신순)
     List<Quiz> findByPublishedDateAndOriginOrderByCreatedAtDesc(
             LocalDate publishedDate,
             Origin origin
@@ -76,7 +76,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "WHERE q.quizId = :quizId")
     Boolean isQuizLikedByUser(@Param("quizId") Long quizId, @Param("userId") Long userId);
 
-    //HOT 게시글 조회(카테고리별)
+    // HOT 게시글 조회(카테고리별)
     @Query("SELECT new com.example.quizley.dto.community.HotQuizDto(" +
             "q.quizId, q.content, q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
@@ -100,7 +100,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             Pageable pageable
     );
 
-    //게시글 목록 조회(카테고리 필터링)
+    // 게시글 목록 조회(카테고리 필터링)
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
             "q.quizId, q.content, q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
@@ -123,7 +123,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             @Param("userId") Long userId
     );
 
-    //게시글 목록 조회(전체)
+    // 게시글 목록 조회(전체)
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
             "q.quizId, q.content, q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +

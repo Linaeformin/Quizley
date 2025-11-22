@@ -43,8 +43,9 @@ public class TodayController {
         // 주말 여부 확인
         boolean weekend = (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY);
 
-        // 평일이라면 => 여기서만 카테고리 필수
+        // 평일
         if (!weekend) {
+            // 카테고리 검증
             if (category == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CATEGORY");
             }
@@ -54,7 +55,7 @@ public class TodayController {
             );
         }
 
-        // 주말일 때 : 카테고리 없이 공통 밸런스 게임
+        // 주말
         return ResponseEntity.ok(
                 quizService.getWeekendQuiz(today, me.getId())
         );

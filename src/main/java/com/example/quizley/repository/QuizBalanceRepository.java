@@ -11,6 +11,4 @@ public interface QuizBalanceRepository extends JpaRepository<QuizBalance, Long> 
 
     // 특정 퀴즈의 선택지 2개 조회 (A, B 순서로)
     List<QuizBalance> findByQuizIdOrderBySideAsc(Long quizId);
-
-    long countByQuizId(Long quizId);
 }
