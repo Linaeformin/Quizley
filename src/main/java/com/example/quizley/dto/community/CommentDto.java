@@ -13,16 +13,19 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CommentDto {
     private Long commentId;
+    private Long userId;
     private String content;
     private String nickname; // 작성자 닉네임 또는 익명
     private Integer likeCount;
     private Boolean isLiked;
     private String createdAt;
 
+
     // 생성자
-    public CommentDto(Long commentId, String content, String nickname,
+    public CommentDto(Long commentId, Long userId, String content, String nickname,
                       Integer likeCount, Boolean isLiked, LocalDateTime createdAt) {
         this.commentId = commentId;
+        this.userId = userId;
         this.content = content;
         this.nickname = nickname;
         this.likeCount = likeCount;

@@ -356,7 +356,7 @@ public class CommunityDetailService {
         reportUserRepository.save(report);
     }
 
-    // 게시글 사용자 차단
+    // 사용자 차단
     @Transactional
     public void blockUser(Long blockedUserId, Long currentUserId) {
         // 자기 자신을 차단할 수 없음
@@ -367,7 +367,6 @@ public class CommunityDetailService {
         // 차단할 사용자 존재 확인
         usersRepository.findById(blockedUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
-
         // 이미 차단했는지 확인
         boolean alreadyBlocked = blockUserRepository.existsByBlockerIdAndBlockedId(currentUserId, blockedUserId);
 

@@ -17,7 +17,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 특정 퀴즈의 댓글 목록 조회 (생성 시간 기준 정렬)
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
-            "c.commentId, c.content, " +
+            "c.commentId, c.user.userId, c.content, " +
             "CASE WHEN c.writerAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "c.likeCount, " +
             "(CASE WHEN :userId IS NULL THEN false " +
@@ -33,7 +33,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 최신순
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
-            "c.commentId, c.content, " +
+            "c.commentId, c.user.userId, c.content, " +
             "CASE WHEN c.writerAnonymous = true THEN " +
             "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
             "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
@@ -53,7 +53,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 인기순 쿼리
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
-            "c.commentId, c.content, " +
+            "c.commentId, c.user.userId, c.content, " +
             "CASE WHEN c.writerAnonymous = true THEN " +
             "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
             "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
@@ -76,7 +76,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 인사이트용: DONE + OPEN + 내 댓글 제외 + 인기순
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
-            "c.commentId, c.content, " +
+            "c.commentId, c.user.userId, c.content, " +
             "CASE WHEN c.writerAnonymous = true THEN " +
             "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
             "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
