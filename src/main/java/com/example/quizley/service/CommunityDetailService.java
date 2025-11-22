@@ -254,7 +254,7 @@ public class CommunityDetailService {
         return savedComment.getCommentId();
     }
 
-    // 댓글 좋아요 토글
+    // 댓글 좋아요 선택
     @Transactional
     public void selectCommentLike(Long commentId, Long userId) {
         // 댓글 조회
