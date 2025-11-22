@@ -1,16 +1,20 @@
 package com.example.quizley.controller;
 
 import com.example.quizley.common.ApiSuccess;
+import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.config.jwt.JwtProvider;
 import com.example.quizley.dto.users.LoginFormDto;
 import com.example.quizley.dto.users.SignupFormDto;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.service.UsersService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -117,5 +121,26 @@ public class UserController {
         body.put("refreshToken", newRefreshToken);
 
         return ResponseEntity.ok(body);
+    }
+
+    // 로그아웃
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(
+            @AuthenticationPrincipal CustomUserDetails me,
+            HttpServletResponse response
+    ) {
+        // 1) DB의 refresh_token NULL로
+        usersService.logout(me.getId());
+
+        // 2) 클라이언트 refresh_token 쿠키 삭제
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+                .path("/")
+                .httpOnly(true)
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity.status(201).body(new ApiSuccess(200, "성공적으로 처리되었습니다."));
     }
 }

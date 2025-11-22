@@ -66,4 +66,13 @@ public class UsersService implements UserDetailsService {
                 Collections.emptyList()         // 권한 (필요 시 추가 가능)
         );
     }
+
+    // 로그아웃
+    @Transactional
+    public void logout(Long userId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "USER_NOT_FOUND"));
+
+        user.clearRefreshToken();
+    }
 }

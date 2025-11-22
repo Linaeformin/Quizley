@@ -64,4 +64,8 @@ public class Users {
         user.setLevel(1);
         return user;
     }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
+    }
 }
