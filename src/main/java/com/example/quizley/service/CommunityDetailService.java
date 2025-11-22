@@ -127,11 +127,13 @@ public class CommunityDetailService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INVALID_BALANCE_DATA");
         }
 
+        // TODO: side 타입 ENUM으로 변경
         QuizBalance sideA = balances.stream()
                 .filter(b -> "A".equals(b.getSide()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "SIDE_A_NOT_FOUND"));
 
+        // TODO: side 타입 ENUM으로 변경
         QuizBalance sideB = balances.stream()
                 .filter(b -> "B".equals(b.getSide()))
                 .findFirst()
@@ -144,9 +146,10 @@ public class CommunityDetailService {
         voteMap.put("A", 0L);
         voteMap.put("B", 0L);
 
+        // TODO : side 형 변환
         for (BalanceAnswer answer : allAnswers) {
-            String side = answer.getSide();
-            voteMap.put(side, voteMap.getOrDefault(side, 0L) + 1);
+            // String side = answer.getSide();
+            // voteMap.put(side, voteMap.getOrDefault(side, 0L) + 1);
         }
 
         // 퍼센트 계산
@@ -162,12 +165,14 @@ public class CommunityDetailService {
         if (currentUserId != null) {
             Optional<BalanceAnswer> userAnswer = balanceAnswerRepository.findByQuizIdAndUserId(quizId, currentUserId);
             if (userAnswer.isPresent()) {
-                userSelectedSide = userAnswer.get().getSide();
+                // TODO : side 형 변환
+                // userSelectedSide = userAnswer.get().getSide();
             }
         }
 
         // DTO 생성
         return WeekendQuizVoteResultDto.builder()
+
                 .sideALabel(sideA.getLabel())
                 .sideAImageUrl(sideA.getImgUrl())
                 .sideAPercentage(sideAPercentage)

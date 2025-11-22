@@ -33,7 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/users/login",
             "/api/users/signup",
             "/admin/quiz/generate",
-            "/upload"
+            "/upload",
+            "/admin/quiz/balance"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();

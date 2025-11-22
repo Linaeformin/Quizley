@@ -2,21 +2,26 @@ package com.example.quizley.service;
 
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
+import com.example.quizley.entity.balance.QuizBalance;
 import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.AiChat;
 import com.example.quizley.entity.quiz.AiMessage;
 import com.example.quizley.entity.quiz.Quiz;
 import com.example.quizley.entity.users.Users;
 import com.example.quizley.repository.*;
+import com.example.quizley.storage.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,6 +44,8 @@ public class QuizService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
     private final UsersRepository usersRepository;
     private final ChatService chatService;
+    private final QuizBalanceRepository quizBalanceRepository;
+    private final S3Service s3Service;
 
     // 퀴즈 생성 및 일주일 뒤 공개 설정
     @Transactional
@@ -395,7 +402,5 @@ public class QuizService {
         // 요약 메시지 수정
         aiChat.setSummary(dto.getSummary());
     }
-
-
 }
 

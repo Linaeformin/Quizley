@@ -1,5 +1,6 @@
 package com.example.quizley.entity.balance;
 
+import com.example.quizley.domain.BalanceSide;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +24,7 @@ public class BalanceAnswer {
     private Long userId;  // 유저 ID
 
     @Column(nullable = false)
-    private String side; // 선택한 답변 (A/B)
+    private BalanceSide side; // 선택한 답변 (A/B)
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; // 응답 날짜

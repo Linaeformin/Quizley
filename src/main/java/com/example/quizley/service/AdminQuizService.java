@@ -2,6 +2,15 @@ package com.example.quizley.service;
 
 import com.example.quizley.config.claude.ClaudeClient;
 import com.example.quizley.config.claude.PromptLoader;
+import com.example.quizley.domain.BalanceSide;
+import com.example.quizley.domain.Origin;
+import com.example.quizley.domain.QuizType;
+import com.example.quizley.dto.quiz.WeekendQuizCreatedFormDto;
+import com.example.quizley.entity.balance.QuizBalance;
+import com.example.quizley.entity.quiz.Quiz;
+import com.example.quizley.repository.QuizBalanceRepository;
+import com.example.quizley.repository.QuizRepository;
+import com.example.quizley.storage.S3Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,7 +18,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static com.example.quizley.config.claude.WeekdayPromptType.QUIZ;
@@ -21,6 +33,9 @@ public class AdminQuizService {
     private final PromptLoader promptLoader;
     private final ClaudeClient claudeClient;
     private final QuizService quizService;
+    private final QuizBalanceRepository quizBalanceRepository;
+    private final QuizRepository quizRepository;
+    private final S3Service s3Service;
 
     private final ObjectMapper om = new ObjectMapper();
 
@@ -92,5 +107,56 @@ public class AdminQuizService {
         int start = s.indexOf('{');
         int end = s.lastIndexOf('}');
         return (start >= 0 && end > start) ? s.substring(start, end + 1).trim() : s.trim();
+    }
+
+
+    @Transactional
+    public void createBalanceGame(
+            WeekendQuizCreatedFormDto request,
+            MultipartFile optionAImage,
+            MultipartFile optionBImage
+    ) throws IOException {
+
+        // 1) Quiz 생성 (category는 밸런스일 때 null 허용)
+        Quiz quiz = new Quiz();
+        quiz.setOrigin(Origin.SYSTEM);
+        quiz.setType(QuizType.WEEKEND);
+        quiz.setContent(request.getContent());
+        quiz.setCategory(null); // 밸런스는 카테고리 없음
+        quiz.setUserId(null);
+        quiz.setIsAnonymous(null);
+        quiz.setPublishedDate(request.getPublishedDate());
+
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        // 2) 이미지 업로드 (여기서 헬퍼 사용)
+        String optionAUrl = uploadIfNotEmpty(optionAImage);
+        String optionBUrl = uploadIfNotEmpty(optionBImage);
+
+        // 3) 선택지 생성
+        QuizBalance balanceA = QuizBalance.of(
+                savedQuiz.getQuizId(),   // 또는 getId()
+                BalanceSide.A,
+                request.getOptionALabel(),
+                optionAUrl
+        );
+
+        QuizBalance balanceB = QuizBalance.of(
+                savedQuiz.getQuizId(),
+                BalanceSide.B,
+                request.getOptionBLabel(),
+                optionBUrl
+        );
+
+        quizBalanceRepository.saveAll(List.of(balanceA, balanceB));
+    }
+
+    private String uploadIfNotEmpty(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            // 이미지 필수라면 여기서 예외 던져도 됨
+            throw new IllegalArgumentException("선택지 이미지가 비어 있습니다.");
+        }
+        // dirName은 너가 원하는 대로 변경 가능 ("balance" 같은 거)
+        return s3Service.uploadFile(file, "balance");
     }
 }
