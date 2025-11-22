@@ -415,7 +415,8 @@ public class CommunityDetailService {
         quizRepository.save(quiz);
     }
 
-    // 게시물 삭제 (soft delete)
+    // 작성한 게시물 삭제
+
     @Transactional
     public void deleteUserQuiz(Long quizId, Long userId) {
         Quiz quiz = quizRepository.findById(quizId)
@@ -431,6 +432,7 @@ public class CommunityDetailService {
         }
 
         quizRepository.delete(quiz);
+
     }
 
     // 게시물 신고
