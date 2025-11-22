@@ -142,7 +142,7 @@ public class CommunityController {
         return ResponseEntity.status(201).body(body);
     }
 
-    // 댓글 좋아요 선택
+    // 댓글 좋아요 선택 기능
     @PostMapping("/comment/{commentId}/like")
     public ResponseEntity<Map<String, Object>> selectCommentLike(
             @PathVariable Long commentId,

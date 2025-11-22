@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 @IdClass(CommentLikeId.class)
 public class CommentLike {
+
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id", nullable = false)
