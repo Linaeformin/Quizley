@@ -271,4 +271,59 @@ public class CommunityController {
 
         return ResponseEntity.ok(body);
     }
+
+    // 게시물 수정
+    @PutMapping("/quiz/{quizId}")
+    public ResponseEntity<Map<String, Object>> updateQuiz(
+            @PathVariable Long quizId,
+            @RequestBody @Valid QuizCreateDto dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.updateUserQuiz(quizId, dto, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "게시물 수정 완료");
+        return ResponseEntity.ok(body);
+    }
+
+    // 게시물 삭제
+    @DeleteMapping("/quiz/{quizId}")
+    public ResponseEntity<Map<String, Object>> deleteQuiz(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.deleteUserQuiz(quizId, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "게시물 삭제 완료");
+        return ResponseEntity.ok(body);
+    }
+
+    // 게시물 신고
+    @PostMapping("/quiz/{quizId}/report")
+    public ResponseEntity<Map<String, Object>> reportQuiz(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        communityDetailService.reportQuiz(quizId, (long) userDetails.getId());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("message", "게시물 신고 완료");
+        return ResponseEntity.ok(body);
+    }
 }
