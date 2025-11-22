@@ -2,6 +2,7 @@ package com.example.quizley.service;
 
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
+import com.example.quizley.entity.balance.BalanceAnswer;
 import com.example.quizley.entity.balance.QuizBalance;
 import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.AiChat;
@@ -441,6 +442,37 @@ public class QuizService {
 
         // 주말 오늘의 밸런스 질문 실제 반환
         return WeekendQuizResDto.of(quiz, completed, roomDate, balances);
+    }
+
+    // 주말 밸런스 게임 투표
+    @Transactional
+    public void vote(Long userId, BalanceVoteFormDto dto) {
+
+        Long quizId = dto.getQuizId();
+        BalanceSide side = dto.getSide();
+
+        // 1) 퀴즈 존재 여부 체크
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
+        // 2) 밸런스 게임 타입인지 검증
+        if (quiz.getType() != QuizType.WEEKEND) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NOT_WEEKEND");
+        }
+
+        // 2) 이미 투표한 유저인지 체크
+        if (balanceAnswerRepository.existsByQuizIdAndUserId(quizId, userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ALREADY_VOTED");
+        }
+
+        // 3) 투표 저장
+        BalanceAnswer answer = new BalanceAnswer();
+        answer.setQuizId(quizId);
+        answer.setUserId(userId);
+        answer.setSide(side);
+        answer.setCreatedAt(LocalDateTime.now());
+
+        balanceAnswerRepository.save(answer);
     }
 }
 

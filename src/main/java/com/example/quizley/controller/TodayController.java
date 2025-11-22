@@ -188,4 +188,21 @@ public class TodayController {
                 new ApiSuccess(200, "성공적으로 처리되었습니다.")
         );
     }
+
+    // 밸런스 게임 투표
+    @PostMapping("/vote")
+    public ResponseEntity<?> vote(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @RequestBody BalanceVoteFormDto dto
+    ) throws Exception {
+        if (me == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        quizService.vote(me.getId(), dto);
+
+        return ResponseEntity.ok(
+                new ApiSuccess(200, "성공적으로 처리되었습니다.")
+        );
+    }
 }
