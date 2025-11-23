@@ -1,5 +1,7 @@
 package com.example.quizley.repository;
 
+import com.example.quizley.domain.Origin;
+import com.example.quizley.domain.Status;
 import com.example.quizley.dto.community.CommentDto;
 import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.Quiz;
@@ -7,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,4 +105,19 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 삭제되지 않은 댓글을 찾는 메소드
     Optional<Comment> findByQuiz_QuizIdAndUser_UserIdAndDeletedAtIsNull(Long quizId, Long userId);
+
+    // 변경: 오늘의 SYSTEM 퀴즈 중, 이 유저가 DONE으로 하나라도 답했는지
+    boolean existsByUser_UserIdAndQuiz_OriginAndQuiz_PublishedDateAndStatus(
+            Long userId,
+            Origin origin,
+            LocalDate publishedDate,
+            Status status
+    );
+
+    // user + quiz 기준, 가장 최근 PROGRESS 댓글
+    Optional<Comment> findFirstByUser_UserIdAndQuiz_QuizIdAndStatusAndDeletedAtIsNullOrderByCreatedAtDesc(
+            Long userId,
+            Long quizId,
+            Status status
+    );
 }
