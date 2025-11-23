@@ -1,6 +1,7 @@
 package com.example.quizley.service;
 
 import com.example.quizley.common.level.LevelService;
+import com.example.quizley.common.level.LevelUpResponse;
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.quiz.*;
 import com.example.quizley.entity.balance.BalanceAnswer;
@@ -50,8 +51,7 @@ public class QuizService {
     private final QuizBalanceRepository quizBalanceRepository;
     private final LevelService levelService;
     private final BalanceAnswerRepository balanceAnswerRepository;
-
-    private final Integer ACCESS_POINT = 10;
+    private final AttendanceService attendanceService;
     private final Integer ANSWER_POINT = 100;
 
     // 퀴즈 생성 및 일주일 뒤 공개 설정
@@ -136,7 +136,7 @@ public class QuizService {
         String roomDate = quiz.getPublishedDate().format(roomDateFormatter);
 
         // 레벨업
-        levelService.tryLevelUp(userId, ACCESS_POINT);
+        attendanceService.attendToday(userId);
 
         // 오늘의 질문 실제 반환
         return WeekdayQuizResDto.of(quiz, completed, roomDate);
@@ -450,7 +450,7 @@ public class QuizService {
         }
 
         // 레벨업
-        levelService.tryLevelUp(userId, ACCESS_POINT);
+        attendanceService.attendToday(userId);
 
         // 주말 오늘의 밸런스 질문 실제 반환
         return WeekendQuizResDto.of(quiz, completed, roomDate, balances);

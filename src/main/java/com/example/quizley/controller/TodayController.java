@@ -1,6 +1,7 @@
 package com.example.quizley.controller;
 
 import com.example.quizley.common.ApiSuccess;
+import com.example.quizley.common.level.LevelUpResponse;
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.domain.Category;
 import com.example.quizley.dto.quiz.*;
@@ -28,6 +29,7 @@ public class TodayController {
     private final ChatService chatService;
 
     // 오늘의 퀴즈 조회
+    @LevelUpResponse
     @GetMapping(value = "")
     public ResponseEntity<?> findTodayQuiz(
             @AuthenticationPrincipal CustomUserDetails me,
@@ -135,6 +137,7 @@ public class TodayController {
     }
 
     // [홈] 오늘의 질문 답변 완료 상태로 변경
+    @LevelUpResponse
     @PatchMapping("/{chatId}/comment")
     public ResponseEntity<?> completeComment(
             @AuthenticationPrincipal CustomUserDetails me,
@@ -153,7 +156,7 @@ public class TodayController {
         );
     }
 
-    // [홈]
+    // [홈] 답변 공유
     @PatchMapping("/{chatId}/share")
     public ResponseEntity<?> share(
             @AuthenticationPrincipal CustomUserDetails me,
@@ -190,6 +193,7 @@ public class TodayController {
     }
 
     // 밸런스 게임 투표
+    @LevelUpResponse
     @PostMapping("/vote")
     public ResponseEntity<?> vote(
             @AuthenticationPrincipal CustomUserDetails me,
