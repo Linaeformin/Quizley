@@ -102,6 +102,7 @@ public class GlobalExceptionHandler {
             case "CANNOT_DELETE_QUIZ_WITH_ACTIVITY" -> "댓글이나 좋아요가 있는 게시물은 삭제할 수 없습니다.";
             case "ALREADY_VOTED" -> "이미 투표한 항목입니다.";
             case "NOT_WEEKEND" -> "밸런스 게임이 아닙니다.";
+            case "ALREADY_ATTENDED" -> "이미 출석했습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
         return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);

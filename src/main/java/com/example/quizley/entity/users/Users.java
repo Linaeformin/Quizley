@@ -8,6 +8,8 @@ import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
@@ -53,6 +55,9 @@ public class Users {
     @UpdateTimestamp
     @Column(name = "modified_at", nullable = false)
     private LocalDateTime modifiedAt; // 프로필 수정 일자
+
+    // 오늘 출석 여부
+    private LocalDate lastAttendanceDate;
 
     // 회원가입 시 User 생성
     public static Users createUser(SignupFormDto signupFormDto, PasswordEncoder passwordEncoder) {

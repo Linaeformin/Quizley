@@ -20,7 +20,10 @@ public class LevelUpResponseAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(MethodParameter returnType,
                             Class<? extends HttpMessageConverter<?>> converterType) {
-        return true;
+        // 1) 메서드에 @LevelUpResponse 붙어 있는지
+        boolean methodAnnotated = returnType.getMethodAnnotation(LevelUpResponse.class) != null;
+
+        return methodAnnotated;
     }
 
     @Override
