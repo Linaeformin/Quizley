@@ -1,0 +1,191 @@
+package com.example.quizley.config;
+
+import com.example.quizley.common.ApiError;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import jakarta.validation.ConstraintViolationException;
+import org.apache.commons.fileupload.FileUploadBase;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+
+// 전체 예외 처리 클래스
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // DTO @Valid 바디 검증 실패
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValid(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldError().getDefaultMessage();
+        return ApiError.of(400, "VALIDATION_ERROR", msg);
+    }
+
+    // 폼/쿼리 파라미터 바인딩 실패
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<?> handleBind(BindException ex) {
+        String msg = ex.getBindingResult().getFieldError().getDefaultMessage();
+        return ApiError.of(400, "BIND_ERROR", msg);
+    }
+
+    // 단건 파라미터(@RequestParam, @PathVariable) 제약 위반
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> handleConstraint(ConstraintViolationException ex) {
+        return ApiError.of(400, "CONSTRAINT_VIOLATION", ex.getMessage());
+    }
+
+    // JSON 파싱 오류
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleNotReadable(HttpMessageNotReadableException ex) {
+        return ApiError.of(400, "INVALID_JSON", "요청 본문(JSON) 형식이 올바르지 않습니다.");
+    }
+
+    // 필수 파라미터 없음
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<?> handleMissing(MissingServletRequestParameterException ex) {
+        return ApiError.of(400, "MISSING_PARAMETER", ex.getParameterName() + " 파라미터가 필요합니다.");
+    }
+
+    // HTTP 메서드 미지원
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<?> handleMethod(HttpRequestMethodNotSupportedException ex) {
+        return ApiError.of(405, "METHOD_NOT_ALLOWED", "지원하지 않는 메서드입니다.");
+    }
+
+    // 커스텀 에러 처리
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<?> handleRSE(ResponseStatusException ex) {
+        String code = ex.getReason(); // "DUPLICATE_USER_ID" 등 서비스에서 실어 보낸 코드
+        String msg  = switch (code) {
+            case "DUPLICATE_USER_ID"   -> "이미 존재하는 아이디입니다.";
+            case "DUPLICATE_NICKNAME"  -> "이미 사용 중인 닉네임입니다.";
+            case "INVALID_CREDENTIALS" -> "아이디 또는 비밀번호가 올바르지 않습니다.";
+            case "NOT_FOUND" -> "존재하지 않는 페이지입니다.";
+            case "FORBIDDEN" -> "권한이 없습니다";
+            case "INVALID_PASSWORD" -> "비밀번호가 일치하지 않습니다.";
+            case "CONSTRAINT_VIOLATION" -> "데이터 무결성 위반";
+            case "INVALID_CATEGORY"    -> "카테고리 값을 확인해주세요.";
+            case "QUIZ_NOT_FOUND"      -> "오늘의 퀴즈를 찾을 수 없습니다.";
+            case "ALREADY_COMPLETED"   -> "이미 응답한 퀴즈입니다.";
+            case "QUIZ_NOT_TODAY" -> "답변 기한이 지났습니다.";
+            case "TODAY_QUIZ_NOT_FOUND" -> "오늘의 질문을 찾을 수 없습니다.";
+            case "INVALID_DATE" -> "유효하지 않은 날짜입니다.";
+            case "INVALID_SORT_TYPE" -> "유효하지 않은 정렬 타입입니다. (latest 또는 popular만 가능)";
+            case "COMMENT_NOT_FOUND" -> "댓글을 찾을 수 없습니다.";
+            case "CANNOT_LIKE_SYSTEM_QUIZ" -> "시스템 퀴즈에는 좋아요를 누를 수 없습니다.";
+            case "CANNOT_COMMENT_ON_SYSTEM_QUIZ" -> "시스템 퀴즈에는 댓글을 작성할 수 없습니다.";
+            case "USER_NOT_FOUND" -> "사용자를 찾을 수 없습니다.";
+            case "NOT_WEEKEND_QUIZ" -> "주말 퀴즈가 아닙니다.";
+            case "INVALID_BALANCE_DATA" -> "투표 선택지 데이터가 올바르지 않습니다.";
+            case "ALREADY_REPORTED" -> "이미 신고한 콘텐츠입니다.";
+            case "CANNOT_BLOCK_YOURSELF" -> "자기 자신을 차단할 수 없습니다.";
+            case "ALREADY_BLOCKED" -> "이미 차단한 사용자입니다.";
+            case "BLOCK_NOT_FOUND" -> "차단 정보를 찾을 수 없습니다.";
+            case "CLOSED_CHAT" -> "닫힌 채팅방입니다.";
+            case "INVALID_KEYWORD" -> "검색어를 입력해주세요.";
+            case "INVALID_BALANCE_CONFIG" -> "밸런스 게임 선택지 에러";
+            case "NO_ANTHROPIC" -> "AI API KEY 오류";
+            case "CANNOT_EDIT_QUIZ_WITH_COMMENTS" -> "댓글이 달린 게시물은 수정할 수 없습니다.";
+            case "CANNOT_REPORT_OWN_QUIZ" -> "본인의 게시물은 신고할 수 없습니다.";
+            case "CANNOT_DELETE_QUIZ_WITH_ACTIVITY" -> "댓글이나 좋아요가 있는 게시물은 삭제할 수 없습니다.";
+            case "ALREADY_VOTED" -> "이미 투표한 항목입니다.";
+            case "NOT_WEEKEND" -> "밸런스 게임이 아닙니다.";
+            case "ALREADY_ATTENDED" -> "이미 출석했습니다.";
+            default -> "요청을 처리할 수 없습니다.";
+        };
+        return ApiError.of(ex.getStatusCode().value(), code != null ? code : "ERROR", msg);
+    }
+
+    // 동시에 회원가입 시 DB에서 터질 때 처리
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String text = String.valueOf(NestedExceptionUtils.getMostSpecificCause(ex).getMessage());
+
+        if (text.contains("user_id") || text.contains("uk_users_user_id"))
+            return ApiError.of(409, "DUPLICATE_USER_ID", "이미 존재하는 아이디입니다.");
+
+        if (text.contains("nickname") || text.contains("uk_users_nickname"))
+            return ApiError.of(409, "DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다.");
+
+        return ApiError.of(409, "CONSTRAINT_VIOLATION", "데이터 무결성 위반");
+    }
+
+    // JWT 예외 처리
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<?> handleJwt(JwtException ex) {
+        String msg = ex.getMessage();
+
+        // 예외 유형별 맞춤 메시지
+        if (ex instanceof ExpiredJwtException) {
+            return ApiError.of(401, "EXPIRED_TOKEN", "토큰이 만료되었습니다.");
+        } else if (msg != null && msg.contains("signature")) {
+            return ApiError.of(401, "INVALID_SIGNATURE", "토큰 서명이 유효하지 않습니다.");
+        } else if (msg != null && msg.contains("JWT")) {
+            return ApiError.of(401, "INVALID_TOKEN", "유효하지 않은 토큰입니다.");
+        }
+        return ApiError.of(401, "INVALID_TOKEN", "인증에 실패했습니다.");
+    }
+
+    // 멀티파트: form 파트 누락 (ex. form 또는 images 파트가 아예 없을 때)
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<?> handleMissingPart(MissingServletRequestPartException ex) {
+        String part = ex.getRequestPartName();
+        return ApiError.of(400, "MISSING_PART", part + " 파트가 필요합니다.");
+    }
+
+    // 파일 용량 초과 (Spring 표준)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxUpload(MaxUploadSizeExceededException ex) {
+        return ApiError.of(413, "FILE_TOO_LARGE", "파일 용량을 확인해주세요.");
+    }
+
+    // 415: 요청 전체 또는 파트의 Content-Type이 맞지 않을 때
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<?> handleUnsupportedMediaType(org.springframework.web.HttpMediaTypeNotSupportedException ex) {
+        return ApiError.of(415, "UNSUPPORTED_MEDIA_TYPE",
+                "요청의 Content-Type이 올바르지 않습니다.");
+    }
+
+    // 카테고리 ENUM 바인딩 실패
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            return ApiError.of(400, "INVALID_CATEGORY", "카테고리 값을 확인해주세요.");
+        }
+        return ApiError.of(400, "BAD_REQUEST", "요청 파라미터가 올바르지 않습니다.");
+    }
+
+    // 그 외 멀티파트 처리 중 예외(랩핑된 경우 포함)
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<?> handleMultipart(MultipartException ex) {
+        Throwable root = ex.getCause();
+        if (root instanceof MaxUploadSizeExceededException) {
+            return ApiError.of(413, "FILE_TOO_LARGE", "파일 용량을 확인해주세요.");
+        }
+        // Apache Commons FileUpload를 쓸 때의 예외
+        if (root instanceof FileUploadBase.FileSizeLimitExceededException ||
+                root instanceof FileUploadBase.SizeLimitExceededException) {
+            return ApiError.of(413, "FILE_TOO_LARGE", "파일 용량을 확인해주세요.");
+        }
+        return ApiError.of(400, "MULTIPART_ERROR", "파일 업로드 형식이 올바르지 않습니다.");
+    }
+
+    // 그 외 예기치 못한 에러
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<?> handleRuntimeException(RuntimeException ex) {
+        return ApiError.of(400, "RUNTIME_ERROR", ex.getMessage());
+    }
+}
+
