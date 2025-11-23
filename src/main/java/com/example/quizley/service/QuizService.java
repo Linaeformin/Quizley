@@ -127,7 +127,16 @@ public class QuizService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
 
         // 사용자의 응답 여부
-        boolean completed = commentRepository.existsByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId);
+        ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
+        LocalDate today = LocalDate.now(ZONE_SEOUL);
+
+        boolean completed = commentRepository
+                .existsByUser_UserIdAndQuiz_OriginAndQuiz_PublishedDateAndStatus(
+                        userId,
+                        Origin.SYSTEM,
+                        today,
+                        Status.DONE
+                );
 
         // 채팅방 생성 날짜 및 요일 포맷
         DateTimeFormatter roomDateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd. (E)")
@@ -415,8 +424,23 @@ public class QuizService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "FORBIDDEN");
         }
 
-        // 요약 메시지 수정
-        aiChat.setSummary(dto.getSummary());
+        // 3) 요약 메시지 수정
+        String summary = dto.getSummary();
+        aiChat.setSummary(summary);
+
+        // 4) 같은 user + quiz 기준, 가장 최근 PROGRESS 댓글 찾아서 content 덮어쓰기
+        Long quizId = aiChat.getQuiz().getQuizId(); // AiChat ↔ Quiz 연관관계 있다고 가정
+
+        commentRepository
+                .findFirstByUser_UserIdAndQuiz_QuizIdAndStatusAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        userId,
+                        quizId,
+                        Status.PROGRESS
+                )
+                .ifPresent(comment -> {
+                    comment.setContent(summary);
+                });
+
     }
 
     // 주말 오늘의 밸런스 질문 추출

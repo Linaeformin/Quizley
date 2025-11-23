@@ -30,7 +30,7 @@ public class Comment {
     @JoinColumn(name = "quiz_id", nullable = false)
     private Quiz quiz;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Enumerated(EnumType.STRING)
