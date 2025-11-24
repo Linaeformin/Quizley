@@ -2,18 +2,23 @@ package com.example.quizley.service;
 
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.domain.Origin;
-import com.example.quizley.dto.profile.MyPostDto;
-import com.example.quizley.dto.profile.ProfileResponseDto;
+import com.example.quizley.dto.profile.*;
+import com.example.quizley.entity.comment.Comment;
 import com.example.quizley.entity.quiz.Quiz;
+import com.example.quizley.entity.quiz.QuizLike;
 import com.example.quizley.entity.users.Users;
+import com.example.quizley.repository.CommentRepository;
+import com.example.quizley.repository.QuizLikeRepository;
 import com.example.quizley.repository.QuizRepository;
 import com.example.quizley.repository.UsersRepository;
-import com.example.quizley.util.TimeFormatUtil;
+import com.example.quizley.storage.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -21,9 +26,17 @@ import java.util.List;
 public class ProfileService {
 
     private final UsersRepository usersRepository;
-    private final QuizRepository quizRepository;   // ★ 추가됨
+    private final QuizRepository quizRepository;
+    private final CommentRepository commentRepository;
+    private final QuizLikeRepository quizLikeRepository;
+    private final PasswordEncoder passwordEncoder;  // 비밀번호 인코딩
+    private final S3Service s3Service;
 
-    // 내 프로필 정보 조회
+
+    private final DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("yyyy.MM.dd");
+
+    // 내 프로필 조회
     public ProfileResponseDto getMyProfile(UserDetails userDetails) {
 
         Long userId = ((CustomUserDetails) userDetails).getId();
@@ -31,8 +44,8 @@ public class ProfileService {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저 없음"));
 
-        int currentExp = user.getPoint();  // 경험치 = point
-        int requiredExp = 1200;            // 임시 레벨업 기준 값
+        int currentExp = user.getPoint();
+        int requiredExp = 1200;
 
         return ProfileResponseDto.builder()
                 .nickname(user.getNickname())
@@ -43,11 +56,9 @@ public class ProfileService {
                 .build();
     }
 
-
-    // 내가 작성한 게시글 조회 (USER가 만든 Quiz 기반)
+    // 내가 작성한 게시글
     @Transactional
     public List<MyPostDto> getMyPosts(Long userId) {
-
         List<Quiz> quizzes = quizRepository
                 .findByUserIdAndOriginOrderByCreatedAtDesc(userId, Origin.USER);
 
@@ -56,9 +67,80 @@ public class ProfileService {
                         .quizId(q.getQuizId())
                         .content(q.getContent())
                         .category(q.getCategory().name())
-                        .createdAt(TimeFormatUtil.formatTimeAgo(q.getCreatedAt()))
+                        .createdAt(q.getCreatedAt().format(formatter))
                         .isAnonymous(q.getIsAnonymous())
                         .build())
                 .toList();
+    }
+
+    // 내가 작성한 댓글
+    @Transactional
+    public List<MyCommentDto> getMyComments(Long userId) {
+
+        List<Comment> comments = commentRepository
+                .findByUser_UserIdOrderByCreatedAtDesc(userId);
+
+        return comments.stream()
+                .map(c -> MyCommentDto.builder()
+                        .commentId(c.getCommentId())
+                        .quizId(c.getQuiz().getQuizId())
+                        .content(c.getContent())
+                        .createdAt(c.getCreatedAt().format(formatter))
+                        .build())
+                .toList();
+    }
+
+    // 좋아요 누른 게시글
+    @Transactional
+    public List<MyLikedPostDto> getMyLikedPosts(Long userId) {
+
+        List<QuizLike> likes = quizLikeRepository
+                .findByUser_UserIdOrderByCreatedAtDesc(userId);
+
+        return likes.stream()
+                .map(l -> {
+                    Quiz q = l.getQuiz();
+                    return MyLikedPostDto.builder()
+                            .quizId(q.getQuizId())
+                            .content(q.getContent())
+                            .category(q.getCategory().name())
+                            .createdAt(q.getCreatedAt().format(formatter))
+                            .build();
+                })
+                .toList();
+    }
+
+    // 프로필 수정
+    @Transactional
+    public ProfileResponseDto updateMyProfile(Long userId, ProfileUpdateRequestDto dto) throws Exception {
+
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저 없음"));
+
+        // 닉네임 변경
+        if (dto.getNickname() != null && !dto.getNickname().isBlank()) {
+            user.setNickname(dto.getNickname());
+        }
+
+        // 비밀번호 변경
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        // 프로필 이미지 업로드
+        if (dto.getProfileImage() != null && !dto.getProfileImage().isEmpty()) {
+            String imageUrl = s3Service.uploadFile(dto.getProfileImage(), "profile");
+            user.setProfile(imageUrl);
+        }
+
+        usersRepository.save(user);
+
+        return ProfileResponseDto.builder()
+                .nickname(user.getNickname())
+                .profile(user.getProfile())
+                .level(user.getLevel())
+                .currentExp(user.getPoint())
+                .requiredExp(1200)
+                .build();
     }
 }
