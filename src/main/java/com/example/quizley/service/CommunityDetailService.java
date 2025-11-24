@@ -38,6 +38,7 @@ public class CommunityDetailService {
     private final QuizBalanceRepository quizBalanceRepository;
     private final BlockUserRepository blockUserRepository;
     private final ReportUserRepository reportUserRepository;
+    private final NotificationService notificationService; // 알림
 
     // 게시글 상세 조회
     public QuizDetailResponse getQuizDetail(Long quizId, Long currentUserId, String sort) {
@@ -253,6 +254,17 @@ public class CommunityDetailService {
         comment.setModifiedAt(LocalDateTime.now());
 
         Comment savedComment = commentRepository.save(comment);
+
+        // 댓글 알림 (본인 작성글이면 제외 + 작성자가 null이 아닐 때만)
+        if (quiz.getUserId() != null && !quiz.getUserId().equals(userId)) {
+            notificationService.sendNotification(
+                    quiz.getUserId(),
+                    "COMMENT",
+                    user.getNickname() + "님이 회원님의 게시물에 댓글을 남겼어요!"
+            );
+
+        }
+
         return savedComment.getCommentId();
     }
 

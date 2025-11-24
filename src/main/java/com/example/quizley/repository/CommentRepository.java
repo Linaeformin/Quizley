@@ -123,4 +123,18 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 내가 작성한 댓글 최신순으로 조회
     List<Comment> findByUser_UserIdOrderByCreatedAtDesc(Long userId);
+
+    // 스토리 알림에서 사용
+    @Query("SELECT c FROM Comment c WHERE DATE(c.createdAt) = :date")
+    List<Comment> findByCreatedAtDate(LocalDate date);
+
+    // 1년전 답변한 게시글 알림
+    @Query("""
+    SELECT c FROM Comment c
+    WHERE c.quiz.origin = com.example.quizley.domain.Origin.SYSTEM
+      AND c.quiz.publishedDate = :date
+      AND c.status = com.example.quizley.domain.Status.DONE
+      AND c.deletedAt IS NULL""")
+    List<Comment> findSystemAnswersByQuizDate(@Param("date") LocalDate date);
+
 }
