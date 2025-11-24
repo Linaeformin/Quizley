@@ -120,4 +120,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             Long quizId,
             Status status
     );
+
+    // 내가 작성한 댓글 최신순으로 조회
+    List<Comment> findByUser_UserIdOrderByCreatedAtDesc(Long userId);
 }
