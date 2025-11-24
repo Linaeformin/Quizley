@@ -12,6 +12,7 @@ import com.example.quizley.repository.QuizLikeRepository;
 import com.example.quizley.repository.QuizRepository;
 import com.example.quizley.repository.UsersRepository;
 import com.example.quizley.storage.S3Service;
+import com.example.quizley.util.TimeFormatUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,10 +32,6 @@ public class ProfileService {
     private final QuizLikeRepository quizLikeRepository;
     private final PasswordEncoder passwordEncoder;  // 비밀번호 인코딩
     private final S3Service s3Service;
-
-
-    private final DateTimeFormatter formatter =
-            DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     // 내 프로필 조회
     public ProfileResponseDto getMyProfile(UserDetails userDetails) {
@@ -67,7 +64,7 @@ public class ProfileService {
                         .quizId(q.getQuizId())
                         .content(q.getContent())
                         .category(q.getCategory().name())
-                        .createdAt(q.getCreatedAt().format(formatter))
+                        .createdAt(TimeFormatUtil.formatTimeAgo(q.getCreatedAt()))
                         .isAnonymous(q.getIsAnonymous())
                         .build())
                 .toList();
@@ -85,7 +82,7 @@ public class ProfileService {
                         .commentId(c.getCommentId())
                         .quizId(c.getQuiz().getQuizId())
                         .content(c.getContent())
-                        .createdAt(c.getCreatedAt().format(formatter))
+                        .createdAt(TimeFormatUtil.formatTimeAgo(c.getCreatedAt()))
                         .build())
                 .toList();
     }
@@ -104,7 +101,7 @@ public class ProfileService {
                             .quizId(q.getQuizId())
                             .content(q.getContent())
                             .category(q.getCategory().name())
-                            .createdAt(q.getCreatedAt().format(formatter))
+                            .createdAt(TimeFormatUtil.formatTimeAgo(q.getCreatedAt()))
                             .build();
                 })
                 .toList();
