@@ -15,6 +15,6 @@ public class InsightRecordResponseDto {
     private String category;    // 카테고리 (예: 미스터리)
     private LocalDate date;     // 공개일
     private String question;    // 퀴즈 내용
-    private String summary;     // AI 요약 (아직 null)
-    private String feedback;    // AI 피드백 (아직 null)
+    private String summary;     // AI 요약
+    private String feedback;    // AI 피드백
 }

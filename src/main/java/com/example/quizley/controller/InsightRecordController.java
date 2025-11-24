@@ -2,6 +2,7 @@ package com.example.quizley.controller;
 
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.dto.calendar.CalendarResponseDto;
+import com.example.quizley.dto.insight.InsightCombinedResponseDto;
 import com.example.quizley.dto.insight.InsightRecordResponseDto;
 import com.example.quizley.dto.insight.SameQuestionAnswerRequestDto;
 import com.example.quizley.dto.insight.SameQuestionAnswerResponseDto;
@@ -92,5 +93,32 @@ public class InsightRecordController {
                 insightRecordService.addSameQuestionAnswer(userId, quizId, request);
 
         return ResponseEntity.ok(saved);
+    }
+
+    // 날짜의 인사이트 + 과거 답변 한 번에 조회
+    @GetMapping("/{date}/{quizId}")
+    public ResponseEntity<?> getInsightAndPastAnswers(
+            @PathVariable LocalDate date,
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails me
+    ) {
+        if (me == null) return ResponseEntity.status(401).build();
+
+        Long userId = me.getId();
+
+        // 날짜 기준 인사이트
+        List<InsightRecordResponseDto> insights =
+                insightRecordService.getInsightByDate(userId, date);
+
+        // 같은 질문 과거 답변
+        List<SameQuestionAnswerResponseDto> answers =
+                insightRecordService.getSameQuestionAnswers(userId, quizId);
+
+        InsightCombinedResponseDto combined = InsightCombinedResponseDto.builder()
+                .insights(insights)
+                .pastAnswers(answers)
+                .build();
+
+        return ResponseEntity.ok(combined);
     }
 }
