@@ -137,4 +137,12 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
       AND c.deletedAt IS NULL""")
     List<Comment> findSystemAnswersByQuizDate(@Param("date") LocalDate date);
 
+    // 평일 출석
+    @Query("""
+    SELECT c FROM Comment c
+    WHERE c.user.userId = :userId
+        AND c.status = com.example.quizley.domain.Status.DONE
+        AND c.quiz.publishedDate = :date
+        AND c.deletedAt IS NULL""")
+    List<Comment> findDoneInsightsByUserIdAndDate(Long userId, LocalDate date);
 }
