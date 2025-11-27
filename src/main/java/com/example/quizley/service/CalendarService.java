@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -17,33 +17,42 @@ public class CalendarService {
 
     public CalendarResponseDto getCalendar(Long userId) {
 
-        // 문자열로 날짜를 가져오기 (형식: "2025-11-13")
-        List<String> answeredDateStrings = calendarRepository.findAnsweredDateStringsByUserId(userId);
+        List<Object> aiChatDates = calendarRepository.findAiChatDates(userId);
+        List<Object> balanceDates = calendarRepository.findBalanceDates(userId);
 
-        // 응답 기록이 없을 경우
-        if (answeredDateStrings.isEmpty()) {
-            return new CalendarResponseDto(userId, 0, Collections.emptyList());
-        }
-
-        // LocalDate로 변환하여 정렬
-        List<LocalDate> answeredDates = answeredDateStrings.stream()
-                .map(LocalDate::parse)
+        List<LocalDate> answeredDates = Stream.concat(
+                        aiChatDates.stream(),
+                        balanceDates.stream()
+                )
+                .map(obj -> {
+                    if (obj instanceof java.sql.Date sqlDate) {
+                        return sqlDate.toLocalDate();
+                    }
+                    if (obj instanceof LocalDate ld) {
+                        return ld;
+                    }
+                    throw new IllegalStateException("Unknown date type: " + obj.getClass());
+                })
+                .distinct()
                 .sorted()
                 .toList();
 
-        // 연속 응답일 계산
         int consecutiveDays = calculateConsecutiveDays(answeredDates);
 
-        // DTO 반환
         return new CalendarResponseDto(userId, consecutiveDays, answeredDates);
     }
 
+
     private int calculateConsecutiveDays(List<LocalDate> dates) {
+
+        if (dates.isEmpty()) return 0;
+
         int streak = 1;
         int maxStreak = 1;
 
         for (int i = 1; i < dates.size(); i++) {
-            if (dates.get(i).minusDays(1).equals(dates.get(i - 1))) {
+
+            if (dates.get(i - 1).plusDays(1).equals(dates.get(i))) {
                 streak++;
                 maxStreak = Math.max(maxStreak, streak);
             } else {
