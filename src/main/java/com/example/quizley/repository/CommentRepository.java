@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -145,4 +146,17 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
         AND c.quiz.publishedDate = :date
         AND c.deletedAt IS NULL""")
     List<Comment> findDoneInsightsByUserIdAndDate(Long userId, LocalDate date);
+
+    // 인사이트 삭제
+    @Query("""
+    SELECT c FROM Comment c
+    WHERE c.user.userId = :userId
+      AND c.deletedAt IS NULL
+      AND c.createdAt BETWEEN :start AND :end""")
+    List<Comment> findByUserIdAndCreatedAtBetween(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
 }

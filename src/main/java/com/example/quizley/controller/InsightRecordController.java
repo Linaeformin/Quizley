@@ -41,15 +41,15 @@ public class InsightRecordController {
     }
 
     /** ▷ 인사이트 삭제 */
-    @DeleteMapping("/{quizId}")
+    @DeleteMapping("/{date}")
     public ResponseEntity<?> deleteInsight(
-            @PathVariable Long quizId,
+            @PathVariable LocalDate date,
             @AuthenticationPrincipal CustomUserDetails me
     ) {
         if (me == null) return ResponseEntity.status(401).build();
 
         Long userId = me.getId();
-        insightRecordService.deleteInsight(quizId, userId);
+        insightRecordService.deleteInsight(date, userId);
 
         CalendarResponseDto calendar = calendarService.getCalendar(userId);
 

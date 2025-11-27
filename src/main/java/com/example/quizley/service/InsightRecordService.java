@@ -89,10 +89,22 @@ public class InsightRecordService {
     }
 
 
-    // 인사이트 삭제
     @Transactional
-    public void deleteInsight(Long quizId, Long userId) {
-        balanceAnswerRepository.deleteByQuizIdAndUserId(quizId, userId);
+    public void deleteInsight(LocalDate date, Long userId) {
+
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(23, 59, 59);
+
+        // 평일 인사이트 삭제: Comment
+        List<Comment> comments = commentRepository
+                .findByUserIdAndCreatedAtBetween(userId, start, end);
+
+        comments.forEach(c -> {
+            c.setContent(null);
+            c.setFeedback(null);
+            c.setDeletedAt(LocalDateTime.now()); // soft delete
+        });
+
     }
 
     // 같은 질문에 다시 답해보기
