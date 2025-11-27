@@ -16,6 +16,11 @@ public class ReportService {
     private final CalendarService calendarService;
     private final ReportRepository reportRepository;
 
+    // 모든 카테고리 리스트 (한글 라벨 그대로)
+    private static final List<String> ALL_CATEGORIES = List.of(
+            "심리학", "자연과학", "역사", "예술", "문학", "미스터리"
+    );
+
     // 카테고리 한글 라벨 매핑
     private static final Map<String, String> CATEGORY_LABELS = Map.of(
             "PSYCHOLOGY", "심리학",
@@ -47,23 +52,26 @@ public class ReportService {
         var calendar = calendarService.getCalendar(userId);
         int streakDays = calendar.getConsecutiveDays();
 
-        // 카테고리 응답 수 raw data
+        // 현재 카테고리별 푼 횟수 가져오기 (영문 코드 기반)
         Map<String, Integer> rawScores = reportRepository.countByCategoryForUser(userId);
 
-        // 한글 라벨로 매핑
+        // 한글 라벨 매핑
         Map<String, Integer> labeledScores = convertLabels(rawScores);
 
-        // 레이더 차트 정규화 (0~100)
-        Map<String, Integer> normalizedScores = normalizeScores(labeledScores);
+        // 모든 카테고리 0 포함하여 채우기
+        Map<String, Integer> completedScores = fillMissingCategories(labeledScores);
 
-        // dominant/least 계산 → 한글 라벨 기준
-        String dominant = findDominant(labeledScores);
-        String least = findLeast(labeledScores);
+        // 0~100 정규화
+        Map<String, Integer> normalizedScores = normalizeScores(completedScores);
 
-        // 퍼센트 계산
+        // 대표 카테고리 계산
+        String dominant = findDominant(completedScores);
+        String least = findLeast(completedScores);
+
+        // 상위 % 계산
         double topPercent = computeTopPercentByCurrentStreak(userId, streakDays);
 
-        // 피드백 생성
+        // 피드백 문구 생성
         String feedback = generateFeedback(dominant, least);
 
         return ReportResponseDto.builder()
@@ -75,13 +83,22 @@ public class ReportService {
                 .build();
     }
 
-    //카테고리 한글 라벨 매핑
+    // 한글 라벨 변환
     private Map<String, Integer> convertLabels(Map<String, Integer> raw) {
         return raw.entrySet().stream()
                 .collect(Collectors.toMap(
                         e -> CATEGORY_LABELS.getOrDefault(e.getKey(), e.getKey()),
                         Map.Entry::getValue
                 ));
+    }
+
+    // 모든 카테고리 0 포함해서 채우기
+    private Map<String, Integer> fillMissingCategories(Map<String, Integer> labeledScores) {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        for (String cat : ALL_CATEGORIES) {
+            result.put(cat, labeledScores.getOrDefault(cat, 0));
+        }
+        return result;
     }
 
     // 0~100 정규화
