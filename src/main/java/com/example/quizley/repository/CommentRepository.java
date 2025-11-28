@@ -149,14 +149,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 인사이트 삭제
     @Query("""
-    SELECT c FROM Comment c
-    WHERE c.user.userId = :userId
-      AND c.deletedAt IS NULL
-      AND c.createdAt BETWEEN :start AND :end""")
-    List<Comment> findByUserIdAndCreatedAtBetween(
+SELECT c FROM Comment c
+WHERE c.user.userId = :userId
+  AND c.createdAt BETWEEN :start AND :end
+""")
+    List<Comment> findInsightsByUserIdAndDateIncludingDeleted(
             @Param("userId") Long userId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
 
 }

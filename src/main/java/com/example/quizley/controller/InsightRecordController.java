@@ -25,7 +25,7 @@ public class InsightRecordController {
     private final InsightRecordService insightRecordService;
     private final CalendarService calendarService;
 
-    /** ▷ 특정 날짜의 인사이트 조회 */
+    // 특정 날짜의 인사이트 조회
     @GetMapping("/{date}")
     public ResponseEntity<?> getInsightByDate(
             @PathVariable LocalDate date,
@@ -40,7 +40,7 @@ public class InsightRecordController {
         return ResponseEntity.ok(insights);
     }
 
-    /** ▷ 인사이트 삭제 */
+    // 인사이트 삭제
     @DeleteMapping("/{date}")
     public ResponseEntity<?> deleteInsight(
             @PathVariable LocalDate date,
@@ -49,14 +49,19 @@ public class InsightRecordController {
         if (me == null) return ResponseEntity.status(401).build();
 
         Long userId = me.getId();
+
+        // 1) 해당 날짜 인사이트 soft delete
         insightRecordService.deleteInsight(date, userId);
 
-        CalendarResponseDto calendar = calendarService.getCalendar(userId);
+        // 2) 삭제 이후, 같은 날짜 다시 조회 → "삭제된 인사이트입니다" 포함된 리스트 반환
+        List<InsightRecordResponseDto> insights =
+                insightRecordService.getInsightByDate(userId, date);
 
-        return ResponseEntity.ok(calendar);
+        return ResponseEntity.ok(insights);
     }
 
-    /** ▷ 같은 질문 과거 답변 조회 */
+
+    // "같은 질문 다시 답해보기" 리스트 조회
     @GetMapping("/{quizId}/answers")
     public ResponseEntity<?> getSameQuestionAnswers(
             @PathVariable Long quizId,
@@ -71,7 +76,7 @@ public class InsightRecordController {
         return ResponseEntity.ok(answers);
     }
 
-    /** ▷ 같은 질문 새 답변 추가 */
+    // 같은 질문 새 답변 등록
     @PostMapping("/{quizId}/answers")
     public ResponseEntity<?> addSameQuestionAnswer(
             @PathVariable Long quizId,
