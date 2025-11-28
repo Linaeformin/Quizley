@@ -44,7 +44,7 @@ public class InsightRecordService {
 
         // 1) 평일: Comment 기반 출석 (SYSTEM)
         List<Comment> weekdayInsights = commentRepository
-                .findDoneInsightsByUserIdAndDate(userId, date);
+                .findInsightsByUserIdAndDateIncludingDeleted(userId, start, end);
 
         // 2) 주말: BalanceAnswer 기반 출석
         List<BalanceAnswer> weekendInsights =
@@ -55,8 +55,20 @@ public class InsightRecordService {
 
         // 평일 인사이트 DTO 변환
         for (Comment c : weekdayInsights) {
-            Quiz quiz = c.getQuiz();
 
+            if (c.getDeletedAt() != null) {
+                results.add(new InsightRecordResponseDto(
+                        null,
+                        null,
+                        date,
+                        null,
+                        null,
+                        "삭제된 인사이트입니다"
+                ));
+                continue;
+            }
+
+            Quiz quiz = c.getQuiz();
             results.add(new InsightRecordResponseDto(
                     quiz.getQuizId(),
                     quiz.getCategory().name(),
@@ -67,6 +79,7 @@ public class InsightRecordService {
                     c.getFeedback()
             ));
         }
+
 
         // 주말 인사이트 DTO 변환
         for (BalanceAnswer b : weekendInsights) {
@@ -89,22 +102,20 @@ public class InsightRecordService {
     }
 
 
+    // 인사이트 삭제
     @Transactional
     public void deleteInsight(LocalDate date, Long userId) {
 
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(23, 59, 59);
 
-        // 평일 인사이트 삭제: Comment
+        // 삭제 포함해 조회
         List<Comment> comments = commentRepository
-                .findByUserIdAndCreatedAtBetween(userId, start, end);
+                .findInsightsByUserIdAndDateIncludingDeleted(userId, start, end);
 
         comments.forEach(c -> {
-            c.setContent(null);
-            c.setFeedback(null);
-            c.setDeletedAt(LocalDateTime.now()); // soft delete
+            c.setDeletedAt(LocalDateTime.now()); // Soft delete
         });
-
     }
 
     // 같은 질문에 다시 답해보기
