@@ -24,12 +24,11 @@ public class QuizListDto {
     private String nickname;
     private Boolean isLiked;
     private String createdAt;
-    private Boolean isMine;
 
     //생성자
     public QuizListDto(Long quizId, String content, Category category, String nickname,
                        long likeCount, long commentCount, LocalDateTime createdAt,
-                       LocalDate publishedDate, boolean isLiked, boolean isMine) {
+                       LocalDate publishedDate, boolean isLiked) {
         this.quizId = quizId;
         this.content = content;
         this.category = category.name();
@@ -39,6 +38,5 @@ public class QuizListDto {
         this.createdAt = TimeFormatUtil.formatTimeAgo(createdAt);
         this.publishedDate = publishedDate;
         this.isLiked = isLiked;
-        this.isMine = false;
     }
 }

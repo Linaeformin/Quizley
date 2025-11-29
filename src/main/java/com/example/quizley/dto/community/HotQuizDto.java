@@ -23,11 +23,10 @@ public class HotQuizDto {
     private String nickname;
     private String createdAt;
     private Boolean isLiked;
-    private Boolean isMine;
 
     //생성자
     public HotQuizDto(Long quizId, String content, Category category, String nickname,
-                      long likeCount, long commentCount, LocalDateTime createdAt, boolean isLiked, boolean isMine) {
+                      long likeCount, long commentCount, LocalDateTime createdAt, boolean isLiked) {
         this.quizId = quizId;
         this.content = content;
         this.category = category.name();
@@ -36,6 +35,5 @@ public class HotQuizDto {
         this.commentCount = commentCount;
         this.createdAt = TimeFormatUtil.formatTimeAgo(createdAt);
         this.isLiked = isLiked;
-        this.isMine = false;
     }
 }
