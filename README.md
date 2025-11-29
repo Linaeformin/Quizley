@@ -55,6 +55,7 @@ Quizley
   - AWS RDS (MySQL DB)
   - AWS S3 (이미지/파일 스토리지)
   - GitHub Actions (deploy.yml 기반 CI/CD 파이프라인)
+  - Nginx (리버스 프록시, HTTP/HTTPS, SSL 종료)  
 
 - AI / External API
   - Anthropic Claude API (퀴즈/요약/챗봇 기능)
@@ -90,6 +91,7 @@ Quizley
 4. main, 배포 설정과 확인 후 팀장이 `main` 브랜치에 머지
 5. 머지 시 GitHub Actions(`deploy.yml`)가 자동으로 실행
 6. EC2에 새로운 버전이 배포되고, 애플리케이션 재시작
-7. 애플리케이션은 AWS RDS(MySQL) 및 S3와 연결된 상태로 서비스 제공
+7. Nginx가 80/443 포트로 들어오는 요청을 Spring Boot 애플리케이션으로 전달  
+8. 애플리케이션은 AWS RDS(MySQL) 및 S3와 연결된 상태로 서비스 제공
 
 
