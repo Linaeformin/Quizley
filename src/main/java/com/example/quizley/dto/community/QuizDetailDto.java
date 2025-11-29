@@ -24,4 +24,5 @@ public class QuizDetailDto {
     private Origin origin;
     private Boolean canLike; // 좋아요 기능 활성화 여부, SYSTEM 퀴즈는 좋아요 불가 (SYSTEM이면 false)
     private Boolean canComment; // 댓글 작성 기능 활성화 여부, SYSTEM 퀴즈는 작성 불가 (SYSTEM이면 false)
+    private Boolean isMine;
 }
