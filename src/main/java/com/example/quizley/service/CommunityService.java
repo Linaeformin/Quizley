@@ -29,7 +29,6 @@ public class CommunityService {
 
     private final QuizRepository quizRepository;
 
-    //커뮤니티 홈 화면 조회
     public CommunityHomeResponse getCommunityHome(LocalDate date, Category category, Long currentUserId) {
         validateDate(date);
 
@@ -40,7 +39,11 @@ public class CommunityService {
         //오늘의 질문 조회
         Quiz todayQuiz = getTodayQuiz(date, category);
         Boolean isTodayQuizLiked = checkQuizLiked(todayQuiz.getQuizId(), currentUserId);
-        TodayQuizDto todayQuizDto = convertToTodayQuizDto(todayQuiz, isTodayQuizLiked);
+
+        // 댓글 수 조회 추가
+        Long commentCount = quizRepository.countCommentsByQuizId(todayQuiz.getQuizId());
+
+        TodayQuizDto todayQuizDto = convertToTodayQuizDto(todayQuiz, isTodayQuizLiked, commentCount);
 
         //특정 카테고리의 HOT 게시글 3개
         List<HotQuizDto> hotQuiz = getHotQuizzesByCategory(date, category, currentUserId);
@@ -54,9 +57,9 @@ public class CommunityService {
                 .category(category.name())
                 .hotQuiz(hotQuiz)
                 .todayQuiz(todayQuizDto)
-                .quizzes(quizzes) //특정 카테고리의 전체 목록
+                .quizzes(quizzes)
                 .build();
-        }
+    }
 
     //게시글 목록 조회
     public List<QuizListDto> getQuizList(LocalDate date, String sortBy, Category category, Long currentUserId) {
@@ -111,13 +114,14 @@ public class CommunityService {
     }
 
     //퀴즈 엔티티를 TodayQuizDto로 변환
-    private TodayQuizDto convertToTodayQuizDto(Quiz quiz, Boolean isLiked) {
+    private TodayQuizDto convertToTodayQuizDto(Quiz quiz, Boolean isLiked, Long commentCount) {
         return TodayQuizDto.builder()
                 .quizId(quiz.getQuizId())
                 .content(quiz.getContent())
                 .category(quiz.getCategory().name())
                 .publishedDate(quiz.getPublishedDate())
                 .isLiked(isLiked)
+                .commentCount(commentCount)
                 .build();
     }
 
