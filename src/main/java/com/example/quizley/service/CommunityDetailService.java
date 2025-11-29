@@ -79,6 +79,7 @@ public class CommunityDetailService {
                 .origin(quiz.getOrigin())
                 .canLike(quiz.getOrigin() == Origin.USER)  // USER 질문만 좋아요 가능
                 .canComment(quiz.getOrigin() == Origin.USER)  // USER 질문만 댓글 작성 가능
+                .isMine(currentUserId != null && quiz.getUserId() != null && quiz.getUserId().equals(currentUserId))
                 .build();
 
         // 댓글 목록 조회

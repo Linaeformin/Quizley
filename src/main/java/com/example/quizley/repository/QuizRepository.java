@@ -85,7 +85,10 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "q.createdAt, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
-            "      ELSE false END)) " +
+            "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN FALSE " +
+            "      WHEN q.userId = :userId THEN TRUE " +
+            "      ELSE FALSE END)) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
@@ -109,7 +112,10 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "q.createdAt, q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
-            "      ELSE false END)) " +
+            "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN FALSE " +
+            "      WHEN q.userId = :userId THEN TRUE " +
+            "      ELSE FALSE END)) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
@@ -132,7 +138,10 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "q.createdAt, q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
-            "      ELSE false END)) " +
+            "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN FALSE " +
+            "      WHEN q.userId = :userId THEN TRUE " +
+            "      ELSE FALSE END)) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
@@ -152,18 +161,23 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = :quizId")
     Long countCommentsByQuizId(@Param("quizId") Long quizId);
 
-    // 키워드로 퀴즈 검색 (최신순)
+    // 키워드로 퀴즈 검색 (최신순) - USER 퀴즈만 검색
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
-            "q.quizId, q.content, q.category, u.nickname, " +
+            "q.quizId, q.content, q.category, " +
+            "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
             "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
             "q.createdAt, q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
-            "      ELSE false END)) " +
+            "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN FALSE " +
+            "      WHEN q.userId = :userId THEN TRUE " +
+            "      ELSE FALSE END)) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.content LIKE %:keyword% " +
+            "AND q.origin = com.example.quizley.domain.Origin.USER " +
             "ORDER BY q.createdAt DESC")
     List<QuizListDto> searchQuizzesByKeywordOrderByLatest(
             @Param("keyword") String keyword,
@@ -171,7 +185,9 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     );
 
     // 키워드로 퀴즈 검색 결과 개수 조회
-    @Query("SELECT COUNT(q) FROM Quiz q WHERE q.content LIKE %:keyword%")
+    @Query("SELECT COUNT(q) FROM Quiz q " +
+            "WHERE q.content LIKE %:keyword% " +
+            "AND q.origin = com.example.quizley.domain.Origin.USER")
     Long countByContentContaining(@Param("keyword") String keyword);
 
     // 내가 작성한 게시글 조회
