@@ -19,17 +19,19 @@ public class CommentDto {
     private Integer likeCount;
     private Boolean isLiked;
     private String createdAt;
+    private Boolean isMine;
 
 
     // 생성자
     public CommentDto(Long commentId, Long userId, String content, String nickname,
-                      Integer likeCount, Boolean isLiked, LocalDateTime createdAt) {
+                      Integer likeCount, Boolean isLiked, Boolean isMine, LocalDateTime createdAt) {
         this.commentId = commentId;
         this.userId = userId;
         this.content = content;
         this.nickname = nickname;
         this.likeCount = likeCount;
         this.isLiked = isLiked;
+        this.isMine = isMine;
         this.createdAt = TimeFormatUtil.formatTimeAgo(createdAt);
     }
 }
