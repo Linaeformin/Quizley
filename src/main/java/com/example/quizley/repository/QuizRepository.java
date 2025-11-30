@@ -200,4 +200,15 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             LocalDate publishedDate
     );
 
+    @Query("SELECT q FROM Quiz q " +
+            "WHERE q.origin = :origin " +
+            "AND q.type = :type " +
+            "AND q.publishedDate = :date " +
+            "AND q.category = :category")
+    Optional<Quiz> findByOriginAndTypeAndPublishedDateAndCategory(
+            @Param("origin") Origin origin,
+            @Param("type") QuizType type,
+            @Param("date") LocalDate date,
+            @Param("category") Category category
+    );
 }

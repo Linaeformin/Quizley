@@ -27,6 +27,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +
             "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN c.user.userId = :userId THEN true " +
+            "      ELSE false END), " +
             "c.createdAt) " +
             "FROM Comment c " +
             "LEFT JOIN Users u ON c.user.userId = u.userId " +
@@ -37,7 +40,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 최신순
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
-            "c.commentId, c.user.userId, c.content, " +
+            "c.commentId, " +
+            "c.user.userId, " +
+            "c.content, " +
             "CASE WHEN c.writerAnonymous = true THEN " +
             "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
             "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
@@ -47,6 +52,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +
             "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN c.user.userId = :userId THEN true " +
+            "      ELSE false END), " +
             "c.createdAt) " +
             "FROM Comment c " +
             "LEFT JOIN c.user u " +
@@ -55,17 +63,24 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "ORDER BY c.createdAt DESC")
     List<CommentDto> findCommentsByQuizIdOrderByLatest(@Param("quizId") Long quizId, @Param("userId") Long userId);
 
+
     // 인기순 쿼리
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
-            "c.commentId, c.user.userId, c.content, " +
+            "c.commentId, " +
+            "c.user.userId, " +
+            "c.content, " +
             "CASE WHEN c.writerAnonymous = true THEN " +
             "CONCAT('익명', CAST((SELECT COUNT(c2.commentId) FROM Comment c2 " +
             "WHERE c2.quiz.quizId = :quizId AND c2.writerAnonymous = true " +
             "AND c2.createdAt <= c.createdAt AND c2.deletedAt IS NULL) AS string)) " +
             "ELSE u.nickname END, " +
             "c.likeCount, " +
+            // isLiked
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +
+            "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN c.user.userId = :userId THEN true " +
             "      ELSE false END), " +
             "c.createdAt) " +
             "FROM Comment c " +
@@ -89,6 +104,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "c.likeCount, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM CommentLike cl WHERE cl.comment.commentId = c.commentId AND cl.user.userId = :userId) THEN true " +
+            "      ELSE false END), " +
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN c.user.userId = :userId THEN true " +
             "      ELSE false END), " +
             "c.createdAt) " +
             "FROM Comment c " +

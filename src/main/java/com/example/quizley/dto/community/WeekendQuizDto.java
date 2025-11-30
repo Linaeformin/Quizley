@@ -1,20 +1,19 @@
 package com.example.quizley.dto.community;
+
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Getter;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 
 @Getter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class TodayQuizDto {
+@NoArgsConstructor
+public class WeekendQuizDto {
     private Long quizId;
     private String content;
-    private String category;
     private LocalDate publishedDate;
-    private Boolean isLiked;
-    private Long commentCount;
-    private Boolean isMine;
+    private WeekendQuizVoteResultDto voteResult;
 }
