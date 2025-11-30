@@ -307,4 +307,22 @@ public class CommunityController {
         body.put("message", "게시물 신고 완료");
         return ResponseEntity.ok(body);
     }
+
+    // 주말 커뮤니티 홈 화면 조회
+    @GetMapping("/weekend/home")
+    public ResponseEntity<Map<String, Object>> getWeekendCommunityHome(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam Category category,
+            @RequestParam(defaultValue = "latest") String sortBy,  // 추가
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long currentUserId = (userDetails != null) ? (long) userDetails.getId() : null;
+        WeekendCommunityHomeResponse response = communityService.getWeekendCommunityHome(date, category, sortBy, currentUserId);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", 200);
+        body.put("data", response);
+        body.put("message", "주말 커뮤니티 홈 화면 조회 성공");
+        return ResponseEntity.ok(body);
+    }
 }
