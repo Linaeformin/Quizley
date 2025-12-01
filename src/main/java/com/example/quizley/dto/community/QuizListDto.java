@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class QuizListDto {
     private Long quizId;
+    private Long userId;
     private String content;
     private String category;
     private Long likeCount;
@@ -28,9 +29,10 @@ public class QuizListDto {
 
     //생성자
     public QuizListDto(Long quizId, String content, Category category, String nickname,
-                       long likeCount, long commentCount, LocalDateTime createdAt,
-                       LocalDate publishedDate, boolean isLiked, boolean isMine) {
+                       Long likeCount, Long commentCount, LocalDateTime createdAt,
+                       LocalDate publishedDate, Boolean isLiked, Boolean isMine, Long userId) {
         this.quizId = quizId;
+        this.userId = userId;
         this.content = content;
         this.category = category.name();
         this.nickname = (nickname != null) ? nickname : "익명";
