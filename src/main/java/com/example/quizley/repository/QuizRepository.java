@@ -118,29 +118,30 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     // 게시글 목록 조회(카테고리 필터링)
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
-            "q.quizId, q.content, q.category, " +
+            "q.quizId, " +
+            "q.content, " +
+            "q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
-            "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL), " +
-            "q.createdAt, q.publishedDate, " +
+            "CAST((SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId) AS long), " +
+            "CAST((SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL) AS long), " +
+            "q.createdAt, " +
+            "q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
             "      ELSE false END), " +
             "(CASE WHEN :userId IS NULL THEN FALSE " +
             "      WHEN q.userId = :userId THEN TRUE " +
-            "      ELSE FALSE END)) " +
+            "      ELSE FALSE END), " +
+            "q.userId) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
             "AND q.origin = :origin " +
             "AND q.category = :category " +
-
             "AND (:userId IS NULL OR NOT EXISTS (" +
             "    SELECT 1 FROM BlockUser b " +
             "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +
             ")) " +
-
             "AND (:userId IS NULL OR NOT EXISTS (" +
             "    SELECT 1 FROM BlockUser b " +
             "    WHERE b.blockerId = q.userId AND b.blockedId = :userId" +
@@ -155,23 +156,25 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     // 게시글 목록 조회(전체)
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
-            "q.quizId, q.content, q.category, " +
+            "q.quizId, " +
+            "q.content, " +
+            "q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
-            "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL), " +
-            "q.createdAt, q.publishedDate, " +
+            "CAST((SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId) AS long), " +
+            "CAST((SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL) AS long), " +
+            "q.createdAt, " +
+            "q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
             "      ELSE false END), " +
             "(CASE WHEN :userId IS NULL THEN FALSE " +
             "      WHEN q.userId = :userId THEN TRUE " +
-            "      ELSE FALSE END)) " +
+            "      ELSE FALSE END), " +
+            "q.userId) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
             "AND q.origin = :origin " +
-
             "AND (:userId IS NULL OR NOT EXISTS (" +
             "    SELECT 1 FROM BlockUser b " +
             "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +
@@ -199,23 +202,25 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     // 키워드로 퀴즈 검색 (최신순) - 차단 필터링 추가
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
-            "q.quizId, q.content, q.category, " +
+            "q.quizId, " +
+            "q.content, " +
+            "q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
-            "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL), " +
-            "q.createdAt, q.publishedDate, " +
+            "CAST((SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId) AS long), " +
+            "CAST((SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL) AS long), " +
+            "q.createdAt, " +
+            "q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
             "      ELSE false END), " +
             "(CASE WHEN :userId IS NULL THEN FALSE " +
             "      WHEN q.userId = :userId THEN TRUE " +
-            "      ELSE FALSE END)) " +
+            "      ELSE FALSE END), " +
+            "q.userId) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.content LIKE %:keyword% " +
             "AND q.origin = com.example.quizley.domain.Origin.USER " +
-
             "AND (:userId IS NULL OR NOT EXISTS (" +
             "    SELECT 1 FROM BlockUser b " +
             "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +

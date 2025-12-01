@@ -35,10 +35,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "LEFT JOIN Users u ON c.user.userId = u.userId " +
             "WHERE c.quiz.quizId = :quizId " +
             "AND c.deletedAt IS NULL " +
+            "AND c.commentAnonymous = com.example.quizley.domain.CommentAnonymous.OPEN " +
             "ORDER BY c.createdAt ASC")
     List<CommentDto> findCommentsByQuizId(@Param("quizId") Long quizId, @Param("userId") Long userId);
 
-    // ✅ 최신순 댓글 조회 (차단 필터링 포함)
+    // 최신순 댓글 조회 (차단 필터링 포함)
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
             "c.commentId, " +
             "c.user.userId, " +
@@ -60,6 +61,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "LEFT JOIN c.user u " +
             "WHERE c.quiz.quizId = :quizId " +
             "AND c.deletedAt IS NULL " +
+            "AND c.commentAnonymous = com.example.quizley.domain.CommentAnonymous.OPEN " +
             "AND (:userId IS NULL OR NOT EXISTS (" +
             "    SELECT 1 FROM BlockUser b " +
             "    WHERE b.blockerId = :userId AND b.blockedId = c.user.userId" +
@@ -71,7 +73,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "ORDER BY c.createdAt DESC")
     List<CommentDto> findCommentsByQuizIdOrderByLatest(@Param("quizId") Long quizId, @Param("userId") Long userId);
 
-    // ✅ 인기순 댓글 조회 (차단 필터링 포함)
+    // 인기순 댓글 조회 (차단 필터링 포함)
     @Query("SELECT new com.example.quizley.dto.community.CommentDto(" +
             "c.commentId, " +
             "c.user.userId, " +
@@ -93,6 +95,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "LEFT JOIN c.user u " +
             "WHERE c.quiz.quizId = :quizId " +
             "AND c.deletedAt IS NULL " +
+            "AND c.commentAnonymous = com.example.quizley.domain.CommentAnonymous.OPEN " +
             "AND (:userId IS NULL OR NOT EXISTS (" +
             "    SELECT 1 FROM BlockUser b " +
             "    WHERE b.blockerId = :userId AND b.blockedId = c.user.userId" +

@@ -222,6 +222,18 @@ public class QuizService {
 
         Long chatId = aiChatRepository.save(aiChat).getChatId();
 
+        //Comment
+        Comment comment = new Comment();
+        comment.setUser(user);
+        comment.setQuiz(quiz);
+        comment.setContent("");
+        comment.setStatus(Status.PROGRESS);
+        comment.setCommentAnonymous(CommentAnonymous.CLOSE); // 디폴트 비공개
+        comment.setWriterAnonymous(false);
+        comment.setLikeCount(0);
+
+        commentRepository.save(comment);
+
         if (form.getContent() != null && !form.getContent().isBlank()) {
             // 채팅 메시지 전송
             chatService.chat(chatId, userId, form.getContent());
