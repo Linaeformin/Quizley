@@ -76,26 +76,39 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "WHERE q.quizId = :quizId")
     Boolean isQuizLikedByUser(@Param("quizId") Long quizId, @Param("userId") Long userId);
 
-    // HOT 게시글 조회(카테고리별)
+    // HOT 게시글 3개 조회 - 차단 필터링 추가
     @Query("SELECT new com.example.quizley.dto.community.HotQuizDto(" +
-            "q.quizId, q.content, q.category, " +
+            "q.quizId, " +
+            "q.content, " +
+            "q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
-            "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
+            "CAST((SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId) AS long), " +
+            "CAST((SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL) AS long), " +
             "q.createdAt, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
             "      ELSE false END), " +
-            "(CASE WHEN :userId IS NULL THEN FALSE " +
-            "      WHEN q.userId = :userId THEN TRUE " +
-            "      ELSE FALSE END)) " +
+            // 본인 여부
+            "(CASE WHEN :userId IS NULL THEN false " +
+            "      WHEN q.userId = :userId THEN true " +
+            "      ELSE false END)) " +
             "FROM Quiz q " +
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
             "AND q.origin = :origin " +
             "AND q.category = :category " +
-            "ORDER BY q.createdAt DESC")
-    List<HotQuizDto> findHotQuizzesByCategory(
+            // 차단한 사용자의 게시물 제외
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +
+            ")) " +
+            // 나를 차단한 사용자의 게시물 제외
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = q.userId AND b.blockedId = :userId" +
+            ")) " +
+            "ORDER BY (SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId) DESC")
+    List<HotQuizDto> findTop3ByDateAndCategoryOrderByLikes(
             @Param("date") LocalDate date,
             @Param("origin") Origin origin,
             @Param("category") Category category,
@@ -108,7 +121,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "q.quizId, q.content, q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
+
+            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL), " +
             "q.createdAt, q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
@@ -121,6 +135,16 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "WHERE q.publishedDate = :date " +
             "AND q.origin = :origin " +
             "AND q.category = :category " +
+
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +
+            ")) " +
+
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = q.userId AND b.blockedId = :userId" +
+            ")) " +
             "ORDER BY q.createdAt DESC")
     List<QuizListDto> findQuizListByCategory(
             @Param("date") LocalDate date,
@@ -134,7 +158,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "q.quizId, q.content, q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
+
+            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL), " +
             "q.createdAt, q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
@@ -146,6 +171,15 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.publishedDate = :date " +
             "AND q.origin = :origin " +
+
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +
+            ")) " +
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = q.userId AND b.blockedId = :userId" +
+            ")) " +
             "ORDER BY q.createdAt DESC")
     List<QuizListDto> findAllQuizList(
             @Param("date") LocalDate date,
@@ -158,15 +192,18 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     Long countLikesByQuizId(@Param("quizId") Long quizId);
 
     // 댓글 개수 조회
-    @Query("SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = :quizId")
+    @Query("SELECT COUNT(c) FROM Comment c " +
+            "WHERE c.quiz.quizId = :quizId " +
+            "AND c.deletedAt IS NULL")
     Long countCommentsByQuizId(@Param("quizId") Long quizId);
 
-    // 키워드로 퀴즈 검색 (최신순) - USER 퀴즈만 검색
+    // 키워드로 퀴즈 검색 (최신순) - 차단 필터링 추가
     @Query("SELECT new com.example.quizley.dto.community.QuizListDto(" +
             "q.quizId, q.content, q.category, " +
             "CASE WHEN q.isAnonymous = true THEN '익명' ELSE u.nickname END, " +
             "(SELECT COUNT(l) FROM QuizLike l WHERE l.quiz.quizId = q.quizId), " +
-            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId), " +
+
+            "(SELECT COUNT(c) FROM Comment c WHERE c.quiz.quizId = q.quizId AND c.deletedAt IS NULL), " +
             "q.createdAt, q.publishedDate, " +
             "(CASE WHEN :userId IS NULL THEN false " +
             "      WHEN EXISTS (SELECT 1 FROM QuizLike l2 WHERE l2.quiz.quizId = q.quizId AND l2.user.userId = :userId) THEN true " +
@@ -178,6 +215,15 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
             "LEFT JOIN Users u ON q.userId = u.userId " +
             "WHERE q.content LIKE %:keyword% " +
             "AND q.origin = com.example.quizley.domain.Origin.USER " +
+
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = :userId AND b.blockedId = q.userId" +
+            ")) " +
+            "AND (:userId IS NULL OR NOT EXISTS (" +
+            "    SELECT 1 FROM BlockUser b " +
+            "    WHERE b.blockerId = q.userId AND b.blockedId = :userId" +
+            ")) " +
             "ORDER BY q.createdAt DESC")
     List<QuizListDto> searchQuizzesByKeywordOrderByLatest(
             @Param("keyword") String keyword,
