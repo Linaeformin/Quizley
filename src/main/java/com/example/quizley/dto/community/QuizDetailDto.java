@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class QuizDetailDto {
     private Long quizId;
+    private Long userId;
     private String content;
     private String nickname; // 닉네임 또는 익명
     private Long likeCount;

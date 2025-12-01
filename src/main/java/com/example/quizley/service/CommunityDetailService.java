@@ -69,6 +69,7 @@ public class CommunityDetailService {
 
         QuizDetailDto quizDetail = QuizDetailDto.builder()
                 .quizId(quiz.getQuizId())
+                .userId(quiz.getUserId())
                 .content(quiz.getContent())
                 .nickname(nickname)
                 .likeCount(likeCount)
@@ -78,7 +79,7 @@ public class CommunityDetailService {
                 .origin(quiz.getOrigin())
                 .canLike(quiz.getOrigin() == Origin.USER)
                 .canComment(quiz.getOrigin() == Origin.USER)
-                .isMine(isMine)  // ✅ userId 기준
+                .isMine(isMine)
                 .build();
 
         List<CommentDto> comments = getCommentsWithTimeFormat(quizId, currentUserId, sort);
