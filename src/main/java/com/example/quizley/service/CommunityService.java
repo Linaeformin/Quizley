@@ -132,10 +132,14 @@ public class CommunityService {
         return isLiked != null ? isLiked:false;
     }
 
-    //카테고리별 HOT 게시글 조회
+    // 카테고리별 HOT 게시글 조회
     private List<HotQuizDto> getHotQuizzesByCategory(LocalDate date, Category category, Long currentUserId) {
-        return quizRepository.findHotQuizzesByCategory(
-                date, Origin.USER, category, currentUserId, PageRequest.of(0, 3)
+        return quizRepository.findTop3ByDateAndCategoryOrderByLikes(
+                date,
+                Origin.USER,
+                category,
+                currentUserId,
+                PageRequest.of(0, 3)
         );
     }
 

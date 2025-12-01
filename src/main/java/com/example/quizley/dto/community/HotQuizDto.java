@@ -27,7 +27,7 @@ public class HotQuizDto {
 
     //생성자
     public HotQuizDto(Long quizId, String content, Category category, String nickname,
-                      long likeCount, long commentCount, LocalDateTime createdAt, boolean isLiked, boolean isMine) {
+                      Long likeCount, Long commentCount, LocalDateTime createdAt, boolean isLiked, boolean isMine) {
         this.quizId = quizId;
         this.content = content;
         this.category = category.name();
