@@ -328,7 +328,7 @@ public class ChatService {
                                 c.setQuiz(quiz);
 
                                 // 사용자의 "최종 답변"으로 ai 요약본 삽입
-                                //c.setContent(mergedSummary);
+                                c.setContent(mergedSummary);
 
                                 c.setStatus(Status.PROGRESS);                     // 답변 완료 상태로 가정
                                 c.setCommentAnonymous(CommentAnonymous.CLOSE); // 등록 전에는 비공개
