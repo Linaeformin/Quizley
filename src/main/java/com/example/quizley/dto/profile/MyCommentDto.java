@@ -10,4 +10,6 @@ public class MyCommentDto {
     private Long quizId;
     private String content;
     private String createdAt;
+    private int likeCount;
+    private String author; // 게시글 작성자
 }

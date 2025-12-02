@@ -15,4 +15,7 @@ public interface QuizLikeRepository extends JpaRepository<QuizLike, QuizLikeId> 
 
     // 내가 좋아요 누른 게시물 찾기
     List<QuizLike> findByUser_UserIdOrderByCreatedAtDesc(Long userId);
+
+    // 내가 작성한 댓글, 내가 작성한 게시글, 내가 좋아요 누른 게시글 좋아요 수
+    long countByQuiz_QuizId(Long quizId);
 }

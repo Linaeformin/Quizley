@@ -11,4 +11,6 @@ public class MyPostDto {
     private String category;
     private String createdAt;
     private Boolean isAnonymous;
+    private int commentCount;
+    private int likeCount;
 }
