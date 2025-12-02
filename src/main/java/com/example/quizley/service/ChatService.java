@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
@@ -111,16 +114,19 @@ public class ChatService {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("a hh:mm")
                 .withLocale(Locale.KOREAN);
 
+        // 한국 시간 기준 현재 시각
+        LocalDateTime nowKst = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
         ChatMessageResDto userDto = ChatMessageResDto.builder()
                 .origin(savedUser.getOrigin())
                 .message(savedUser.getContent())
-                .date(savedUser.getCreatedAt().format(fmt))
+                .date(nowKst.format(fmt))
                 .build();
 
         ChatMessageResDto aiDto = ChatMessageResDto.builder()
                 .origin(savedAi.getOrigin())
                 .message(savedAi.getContent())
-                .date(savedAi.getCreatedAt().format(fmt))
+                .date(nowKst.format(fmt))
                 .build();
 
         return SentChatMessageResDto.builder()
