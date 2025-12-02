@@ -197,7 +197,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     // 댓글 개수 조회
     @Query("SELECT COUNT(c) FROM Comment c " +
             "WHERE c.quiz.quizId = :quizId " +
-            "AND c.deletedAt IS NULL")
+            "AND c.deletedAt IS NULL " +
+            "AND c.commentAnonymous = com.example.quizley.domain.CommentAnonymous.OPEN")
     Long countCommentsByQuizId(@Param("quizId") Long quizId);
 
     // 키워드로 퀴즈 검색 (최신순) - 차단 필터링 추가
