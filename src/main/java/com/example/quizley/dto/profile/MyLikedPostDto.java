@@ -10,4 +10,7 @@ public class MyLikedPostDto {
     private String content;
     private String category;
     private String createdAt;
+    private String author;
+    private int commentCount;
+    private int likeCount;
 }

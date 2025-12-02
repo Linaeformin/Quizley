@@ -195,5 +195,8 @@ WHERE c.user.userId = :userId
             @Param("end") LocalDateTime end
     );
 
+    // 내가 작성한 게시물, 내가 좋아요 누른 게시물 댓글 개수
+    long countByQuiz_QuizId(Long quizId);
+
 
 }
