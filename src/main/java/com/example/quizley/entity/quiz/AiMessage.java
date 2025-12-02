@@ -33,11 +33,9 @@ public class AiMessage {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "modified_at", nullable = false)
+    @Column(name = "modified_at", nullable = false, insertable = false, updatable = false)
     private LocalDateTime modifiedAt;
 }
