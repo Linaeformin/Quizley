@@ -4,6 +4,8 @@ import com.example.quizley.dto.insight.InsightRecordResponseDto;
 import com.example.quizley.dto.insight.SameQuestionAnswerRequestDto;
 import com.example.quizley.dto.insight.SameQuestionAnswerResponseDto;
 
+import com.example.quizley.dto.quiz.TopCommentDto;
+
 import com.example.quizley.entity.balance.BalanceAnswer;
 import com.example.quizley.entity.insight.InsightAnswer;
 import com.example.quizley.entity.quiz.AiChat;
@@ -30,9 +32,7 @@ public class InsightRecordService {
 
     private final BalanceAnswerRepository balanceAnswerRepository;
     private final QuizRepository quizRepository;
-
     private final InsightAnswerRepository insightAnswerRepository;
-
     private final AiChatRepository aiChatRepository;
     private final CommentRepository commentRepository;
 
@@ -42,15 +42,14 @@ public class InsightRecordService {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(23, 59, 59);
 
-        // 1) 평일: Comment 기반 출석 (SYSTEM)
+        // 평일 댓글 기반 출석
         List<Comment> weekdayInsights = commentRepository
                 .findInsightsByUserIdAndDateIncludingDeleted(userId, start, end);
 
-        // 2) 주말: BalanceAnswer 기반 출석
+        // 주말 밸런스 기반 출석
         List<BalanceAnswer> weekendInsights =
                 balanceAnswerRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
 
-        // 둘 다 합치기
         List<InsightRecordResponseDto> results = new java.util.ArrayList<>();
 
         // 평일 인사이트 DTO 변환
@@ -58,71 +57,106 @@ public class InsightRecordService {
 
             if (c.getDeletedAt() != null) {
                 results.add(new InsightRecordResponseDto(
-                        null,
-                        null,
-                        date,
-                        null,
-                        null,
-                        "삭제된 인사이트입니다"
+                        null, null, date, null,
+                        null, // summary 없음
+                        "삭제된 인사이트입니다",
+                        List.of() // 삭제된 경우도 빈 리스트 반환
                 ));
                 continue;
             }
 
             Quiz quiz = c.getQuiz();
+
+            // 다른 유저 Top 댓글 조회
+            List<TopCommentDto> topComments = commentRepository
+                    .findInsightCommentsByQuizIdExceptUser(
+                            quiz.getQuizId(), userId
+                    )
+                    .stream()
+                    .limit(3)
+                    .map(other -> {
+                        TopCommentDto dto = new TopCommentDto();
+                        dto.setCommentId(other.getCommentId());
+                        dto.setComment(other.getContent());
+                        return dto;
+                    })
+                    .toList();
+
+
             results.add(new InsightRecordResponseDto(
                     quiz.getQuizId(),
                     quiz.getCategory().name(),
                     quiz.getPublishedDate(),
                     quiz.getContent(),
-                    aiChatRepository.findByQuiz_QuizIdAndUsers_UserId(quiz.getQuizId(), userId)
+                    aiChatRepository.findByQuiz_QuizIdAndUsers_UserId(
+                                    quiz.getQuizId(), userId
+                            )
                             .map(AiChat::getSummary).orElse(null),
-                    c.getFeedback()
+                    c.getFeedback(),
+                    topComments
             ));
         }
-
 
         // 주말 인사이트 DTO 변환
         for (BalanceAnswer b : weekendInsights) {
             Quiz quiz = quizRepository.findById(b.getQuizId())
                     .orElseThrow(() -> new IllegalArgumentException("QUIZ_NOT_FOUND"));
 
+            // 다른 유저 Top 댓글 조회
+            List<TopCommentDto> topComments = commentRepository
+                    .findInsightCommentsByQuizIdExceptUser(
+                            quiz.getQuizId(), userId
+                    )
+                    .stream()
+                    .limit(3)
+                    .map(other -> {
+                        TopCommentDto dto = new TopCommentDto();
+                        dto.setCommentId(other.getCommentId());
+                        dto.setComment(other.getContent());
+                        return dto;
+                    })
+                    .toList();
+
+
             results.add(new InsightRecordResponseDto(
                     quiz.getQuizId(),
                     quiz.getCategory().name(),
                     quiz.getPublishedDate(),
                     quiz.getContent(),
-                    aiChatRepository.findByQuiz_QuizIdAndUsers_UserId(quiz.getQuizId(), userId)
+                    aiChatRepository.findByQuiz_QuizIdAndUsers_UserId(
+                                    quiz.getQuizId(), userId
+                            )
                             .map(AiChat::getSummary).orElse(null),
-                    commentRepository.findByQuiz_QuizIdAndUser_UserId(quiz.getQuizId(), userId)
-                            .map(Comment::getFeedback).orElse(null)
+                    commentRepository.findByQuiz_QuizIdAndUser_UserId(
+                                    quiz.getQuizId(), userId
+                            )
+                            .map(Comment::getFeedback).orElse(null),
+                    topComments
             ));
         }
 
         return results;
     }
 
-
-    // 인사이트 삭제
+    // 인사이트 삭제 (Soft delete)
     @Transactional
     public void deleteInsight(LocalDate date, Long userId) {
 
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(23, 59, 59);
 
-        // 삭제 포함해 조회
         List<Comment> comments = commentRepository
                 .findInsightsByUserIdAndDateIncludingDeleted(userId, start, end);
 
-        comments.forEach(c -> {
-            c.setDeletedAt(LocalDateTime.now()); // Soft delete
-        });
+        comments.forEach(c -> c.setDeletedAt(LocalDateTime.now()));
     }
 
     // 같은 질문에 다시 답해보기
     public List<SameQuestionAnswerResponseDto> getSameQuestionAnswers(Long userId, Long quizId) {
 
         List<InsightAnswer> answers =
-                insightAnswerRepository.findByUserIdAndQuizIdOrderByCreatedAtDesc(userId, quizId);
+                insightAnswerRepository.findByUserIdAndQuizIdOrderByCreatedAtDesc(
+                        userId, quizId);
 
         return answers.stream()
                 .map(a -> new SameQuestionAnswerResponseDto(
@@ -136,8 +170,7 @@ public class InsightRecordService {
     // 같은 질문 새 답변 등록
     @Transactional
     public SameQuestionAnswerResponseDto addSameQuestionAnswer(
-            Long userId, Long quizId, SameQuestionAnswerRequestDto request
-    ) {
+            Long userId, Long quizId, SameQuestionAnswerRequestDto request) {
 
         quizRepository.findById(quizId)
                 .orElseThrow(() -> new IllegalArgumentException("QUIZ_NOT_FOUND"));
