@@ -63,9 +63,11 @@ public class ProfileService {
                 .map(q -> MyPostDto.builder()
                         .quizId(q.getQuizId())
                         .content(q.getContent())
-                        .category(q.getCategory().name())
+                        .category(q.getCategory() != null ? q.getCategory().name() : "밸런스")
                         .createdAt(TimeFormatUtil.formatTimeAgo(q.getCreatedAt()))
                         .isAnonymous(q.getIsAnonymous())
+                        .commentCount((int) commentRepository.countByQuiz_QuizId(q.getQuizId()))
+                        .likeCount((int) quizLikeRepository.countByQuiz_QuizId(q.getQuizId()))
                         .build())
                 .toList();
     }
@@ -78,12 +80,26 @@ public class ProfileService {
                 .findByUser_UserIdOrderByCreatedAtDesc(userId);
 
         return comments.stream()
-                .map(c -> MyCommentDto.builder()
-                        .commentId(c.getCommentId())
-                        .quizId(c.getQuiz().getQuizId())
-                        .content(c.getContent())
-                        .createdAt(TimeFormatUtil.formatTimeAgo(c.getCreatedAt()))
-                        .build())
+                .map(c -> {
+                    Quiz q = c.getQuiz();
+
+                    String author;
+                    if (q.getOrigin() == Origin.SYSTEM) author = "퀴즐리봇";
+                    else author = q.getIsAnonymous()
+                            ? "익명"
+                            : usersRepository.findById(q.getUserId())
+                            .map(Users::getNickname)
+                            .orElse("탈퇴한 사용자");
+
+                    return MyCommentDto.builder()
+                            .commentId(c.getCommentId())
+                            .quizId(q.getQuizId())
+                            .content(c.getContent())
+                            .createdAt(TimeFormatUtil.formatTimeAgo(c.getCreatedAt()))
+                            .author(author)
+                            .likeCount(c.getLikeCount()) // 댓글 좋아요 카운트
+                            .build();
+                })
                 .toList();
     }
 
@@ -97,11 +113,23 @@ public class ProfileService {
         return likes.stream()
                 .map(l -> {
                     Quiz q = l.getQuiz();
+
+                    String author;
+                    if (q.getOrigin() == Origin.SYSTEM) author = "퀴즐리봇";
+                    else author = q.getIsAnonymous()
+                            ? "익명"
+                            : usersRepository.findById(q.getUserId())
+                            .map(Users::getNickname)
+                            .orElse("탈퇴한 사용자");
+
                     return MyLikedPostDto.builder()
                             .quizId(q.getQuizId())
                             .content(q.getContent())
-                            .category(q.getCategory().name())
+                            .category(q.getCategory() != null ? q.getCategory().name() : "밸런스")
                             .createdAt(TimeFormatUtil.formatTimeAgo(q.getCreatedAt()))
+                            .author(author)
+                            .commentCount((int) commentRepository.countByQuiz_QuizId(q.getQuizId()))
+                            .likeCount((int) quizLikeRepository.countByQuiz_QuizId(q.getQuizId()))
                             .build();
                 })
                 .toList();

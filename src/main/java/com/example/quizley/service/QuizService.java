@@ -222,7 +222,7 @@ public class QuizService {
 
         Long chatId = aiChatRepository.save(aiChat).getChatId();
 
-        //Comment
+        // Comment
         Comment comment = new Comment();
         comment.setUser(user);
         comment.setQuiz(quiz);
@@ -441,7 +441,7 @@ public class QuizService {
         aiChat.setSummary(summary);
 
         // 4) 같은 user + quiz 기준, 가장 최근 PROGRESS 댓글 찾아서 content 덮어쓰기
-        Long quizId = aiChat.getQuiz().getQuizId(); // AiChat ↔ Quiz 연관관계 있다고 가정
+        Long quizId = aiChat.getQuiz().getQuizId();
 
         commentRepository
                 .findFirstByUser_UserIdAndQuiz_QuizIdAndStatusAndDeletedAtIsNullOrderByCreatedAtDesc(
