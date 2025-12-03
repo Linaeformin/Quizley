@@ -39,7 +39,7 @@ Quizley
 ## 🛠 Tech Stack
 
 - Language
-  - Java 17 (사용 버전에 맞게 수정)
+  - Java 17
 
 - Backend
   - Spring Boot
