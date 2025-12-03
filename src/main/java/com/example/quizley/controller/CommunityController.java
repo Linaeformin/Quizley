@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import com.example.quizley.common.level.LevelUpResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -122,6 +123,7 @@ public class CommunityController {
     }
 
     // 댓글 작성
+    @LevelUpResponse
     @PostMapping("/quiz/{quizId}/comment")
     public ResponseEntity<Map<String, Object>> createComment(
             @PathVariable Long quizId,
@@ -159,6 +161,7 @@ public class CommunityController {
     }
 
     // 게시글 작성
+    @LevelUpResponse
     @PostMapping("/quiz")
     public ResponseEntity<Map<String, Object>> createQuiz(
             @RequestBody @Valid QuizCreateDto dto,
