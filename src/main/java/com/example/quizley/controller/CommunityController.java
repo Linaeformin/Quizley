@@ -25,7 +25,7 @@ public class CommunityController {
     private final CommunityService communityService;
     private final CommunityDetailService communityDetailService;
 
-    //커뮤니티 홈 화면 조회
+    // 커뮤니티 홈 화면 조회
     @GetMapping("/home")
     public ResponseEntity<Map<String, Object>> getCommunityHome(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
