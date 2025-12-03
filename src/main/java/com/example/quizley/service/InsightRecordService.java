@@ -1,5 +1,6 @@
 package com.example.quizley.service;
 
+import com.example.quizley.common.level.LevelService;
 import com.example.quizley.dto.insight.InsightRecordResponseDto;
 import com.example.quizley.dto.insight.SameQuestionAnswerRequestDto;
 import com.example.quizley.dto.insight.SameQuestionAnswerResponseDto;
@@ -35,6 +36,9 @@ public class InsightRecordService {
     private final InsightAnswerRepository insightAnswerRepository;
     private final AiChatRepository aiChatRepository;
     private final CommentRepository commentRepository;
+    private final LevelService levelService;
+
+    private static final int ANSWER_POINT = 100; // 재답변 포인트
 
     // 특정 날짜의 인사이트 조회
     public List<InsightRecordResponseDto> getInsightByDate(Long userId, LocalDate date) {
@@ -181,6 +185,9 @@ public class InsightRecordService {
         entity.setContent(request.getAnswer());
 
         InsightAnswer saved = insightAnswerRepository.save(entity);
+
+        // 레벨업 (포인트 +100)
+        levelService.tryLevelUp(userId, ANSWER_POINT);
 
         return new SameQuestionAnswerResponseDto(
                 saved.getId(),
