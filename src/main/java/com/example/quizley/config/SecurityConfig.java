@@ -120,7 +120,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // 허용 주소 설정
-        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "http://3.25.125.245:*"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "http://3.25.125.245:*", "https://quizley-fe.vercel.app"));
 
         // 허용 메서드 설정
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
