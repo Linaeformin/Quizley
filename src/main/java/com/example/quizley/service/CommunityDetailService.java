@@ -1,4 +1,5 @@
 package com.example.quizley.service;
+import com.example.quizley.common.level.LevelService;
 import com.example.quizley.domain.*;
 import com.example.quizley.dto.community.*;
 import com.example.quizley.entity.balance.BalanceAnswer;
@@ -39,6 +40,10 @@ public class CommunityDetailService {
     private final BlockUserRepository blockUserRepository;
     private final ReportUserRepository reportUserRepository;
     private final NotificationService notificationService;
+    private final LevelService levelService;
+
+    private static final int COMMENT_POINT = 100;
+    private static final int QUIZ_POINT = 100;
 
     // 게시글 상세 조회
     public QuizDetailResponse getQuizDetail(Long quizId, Long currentUserId, String sort) {
@@ -234,6 +239,8 @@ public class CommunityDetailService {
             );
         }
 
+        levelService.tryLevelUp(userId, COMMENT_POINT);
+
         return savedComment.getCommentId();
     }
 
@@ -290,6 +297,7 @@ public class CommunityDetailService {
         System.out.println("category: " + savedQuiz.getCategory());
         System.out.println("origin: " + savedQuiz.getOrigin());
 
+        levelService.tryLevelUp(userId, QUIZ_POINT);
         return savedQuiz.getQuizId();
     }
 

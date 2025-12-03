@@ -1,5 +1,6 @@
 package com.example.quizley.controller;
 
+import com.example.quizley.common.level.LevelUpResponse;
 import com.example.quizley.config.CustomUserDetails;
 import com.example.quizley.dto.calendar.CalendarResponseDto;
 import com.example.quizley.dto.insight.InsightRecordResponseDto;
@@ -77,6 +78,7 @@ public class InsightRecordController {
     }
 
     // 같은 질문 새 답변 등록
+    @LevelUpResponse
     @PostMapping("/{quizId}/answers")
     public ResponseEntity<?> addSameQuestionAnswer(
             @PathVariable Long quizId,
