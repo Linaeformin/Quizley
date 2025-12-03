@@ -52,7 +52,7 @@ public class CommunityService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "USE_WEEKEND_ENDPOINT");
         }
 
-        //오늘의 질문 조회
+        // 오늘의 질문 조회
         Quiz todayQuiz = quizRepository
                 .findByOriginAndTypeAndPublishedDateAndCategory(
                         Origin.SYSTEM,
@@ -61,7 +61,9 @@ public class CommunityService {
                         category
                 )
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
+
         Boolean isTodayQuizLiked = checkQuizLiked(todayQuiz.getQuizId(), currentUserId);
+
         Long commentCount = quizRepository.countCommentsByQuizId(todayQuiz.getQuizId());
         Boolean isMine = (currentUserId != null && todayQuiz.getUserId() != null
                 && todayQuiz.getUserId().equals(currentUserId));

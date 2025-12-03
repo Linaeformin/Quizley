@@ -55,7 +55,7 @@ public class AdminQuizService {
         String prompt = promptLoader.load(QUIZ);
 
         // 2) LLM 호출
-        String joined = claudeClient.call(model, maxTokens.longValue(), 0.0, prompt);
+        String joined = claudeClient.call(model, maxTokens.longValue(), 0.8, prompt);
         if (joined == null || joined.isBlank()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "NO_ANTHROPIC");
         }
