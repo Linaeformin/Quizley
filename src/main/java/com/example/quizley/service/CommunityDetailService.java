@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.time.ZoneId;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -284,7 +285,7 @@ public class CommunityDetailService {
                 .category(dto.getCategory())
                 .userId(userId)
                 .isAnonymous(isAnonymous)
-                .publishedDate(LocalDate.now())
+                .publishedDate(LocalDate.now(ZoneId.of("Asia/Seoul")))
                 .createdAt(LocalDateTime.now())
                 .modifiedAt(LocalDateTime.now())
                 .build();
