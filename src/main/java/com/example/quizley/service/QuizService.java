@@ -126,15 +126,11 @@ public class QuizService {
                 .findByOriginAndPublishedDateAndCategory(Origin.SYSTEM, date, cat)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QUIZ_NOT_FOUND"));
 
-        // 사용자의 응답 여부
-        ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
-        LocalDate today = LocalDate.now(ZONE_SEOUL);
-
         boolean completed = commentRepository
                 .existsByUser_UserIdAndQuiz_OriginAndQuiz_PublishedDateAndStatus(
                         userId,
                         Origin.SYSTEM,
-                        today,
+                        quiz.getPublishedDate(),
                         Status.DONE
                 );
 

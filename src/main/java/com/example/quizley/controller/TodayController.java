@@ -8,6 +8,7 @@ import com.example.quizley.dto.quiz.*;
 import com.example.quizley.service.ChatService;
 import com.example.quizley.service.QuizService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,14 +34,15 @@ public class TodayController {
     @GetMapping(value = "")
     public ResponseEntity<?> findTodayQuiz(
             @AuthenticationPrincipal CustomUserDetails me,
-            @RequestParam(required = false) Category category
+            @RequestParam(required = false) Category category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         // 권한이 없을 때
         if (me == null) return ResponseEntity.status(401).build();
 
         // 오늘 날짜 조회
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        DayOfWeek dow = today.getDayOfWeek();
+        LocalDate targetDate = (date != null) ? date : LocalDate.now(ZoneId.of("Asia/Seoul"));
+        DayOfWeek dow = targetDate.getDayOfWeek();
 
         // 주말 여부 확인
         boolean weekend = (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY);
@@ -53,13 +55,13 @@ public class TodayController {
             }
 
             return ResponseEntity.ok(
-                    quizService.getWeekdayQuiz(today, String.valueOf(category), me.getId())
+                    quizService.getWeekdayQuiz(targetDate, String.valueOf(category), me.getId())
             );
         }
 
         // 주말
         return ResponseEntity.ok(
-                quizService.getWeekendQuiz(today, me.getId())
+                quizService.getWeekendQuiz(targetDate, me.getId())
         );
     }
 
